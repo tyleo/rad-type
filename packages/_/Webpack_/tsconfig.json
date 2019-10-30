@@ -1,0 +1,13 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "Webpack_": ["./ts"]
+    },
+    "rootDir": "./ts",
+    "outDir": "./target/ts",
+    "tsBuildInfoFile": "./target/ts/tsconfig.tsbuildinfo"
+  },
+  "include": ["./ts/**/*.ts", "./ts/**/*.tsx"]
+}

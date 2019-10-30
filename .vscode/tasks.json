@@ -1,0 +1,42 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "DevevCom:watch+serve:dev",
+      "dependsOrder": "parallel",
+      "dependsOn": [
+        "npm: watch:ttsc - packages/DevevComFrontend",
+        "npm: serve:live:dev - packages/DevevComFrontend"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "DevevCom:live:dev",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "npm: build - packages/DevevComFrontend",
+        "DevevCom:watch+serve:dev"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "DevevCom:watch+serve:prod",
+      "dependsOn": [
+        "npm: watch:ttsc - packages/DevevComFrontend",
+        "npm: serve:live:prod - packages/DevevComFrontend"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "DevevCom:live:prod",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "npm: build - packages/DevevComFrontend",
+        "DevevCom:watch+serve:prod"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

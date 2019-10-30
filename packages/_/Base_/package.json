@@ -1,0 +1,27 @@
+{
+  "name": "Base_",
+  "version": "1.0.0",
+  "description": "Base_",
+  "author": "Tyler Wolf Leonhardt",
+  "private": true,
+  "devDependencies": {
+    "@babel/core": "^7.0.0-0",
+    "@babel/preset-env": "^7.0.0-0",
+    "@babel/register": "^7.5.5",
+    "@types/jest": "^24.0.13",
+    "babel-jest": "^24.8.0",
+    "babel-polyfill": "^6.26.0",
+    "jest": "^24.8.0",
+    "rimraf": "^3.0.0",
+    "ts-node": "^8.0.2",
+    "ts-transform-paths": "^2.0.0",
+    "ttypescript": "^1.5.6",
+    "typescript": "^3.4.3"
+  },
+  "scripts": {
+    "clean": "yarn clean:node_modules & yarn clean:target",
+    "clean:node_modules": "rimraf node_modules",
+    "clean:target": "rimraf target"
+  },
+  "sideEffects": false
+}

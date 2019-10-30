@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "downlevelIteration": true,
+    "composite": true,
+    // Necessary to use babel for webpack configs
+    "esModuleInterop": true,
+    "incremental": true,
+    "jsx": "react",
+    "module": "es2015",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "es2015",
+    "plugins": [
+      {
+        "transform": "ts-transform-paths"
+      }
+    ]
+  }
+}

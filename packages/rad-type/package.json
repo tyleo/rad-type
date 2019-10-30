@@ -1,0 +1,44 @@
+{
+  "name": "rad-type",
+  "version": "1.0.0",
+  "description": "rad-type",
+  "author": "Tyler Wolf Leonhardt",
+  "private": true,
+  "main": "./target/ts/index.js",
+  "types": "./target/ts/index.d.ts",
+  "devDependencies": {
+    "@types/react": "^16.8.8",
+    "@types/react-dom": "^16.8.2",
+    "@types/react-redux": "^7.0.9",
+    "@types/react-router-dom": "^5.1.0",
+    "Base_": "1.0.0",
+    "Webpack_": "1.0.0"
+  },
+  "dependencies": {
+    "emotion": "^10.0.23",
+    "react": "^16.8.4",
+    "react-dom": "^16.8.4",
+    "react-redux": "^7.0.3",
+    "react-router-dom": "^5.0.1",
+    "redux": "^4.0.1"
+  },
+  "scripts": {
+    "build": "ttsc -b",
+    "build:analysis": "yarn build && yarn webpack -r @babel/register --config target/ts/_Build/webpack.analysis.js --profile",
+    "build:dev": "yarn build && yarn webpack -r @babel/register --config target/ts/_Build/webpack.dev.js",
+    "build:release_final": "yarn build && yarn webpack -r @babel/register --config target/ts/_Build/webpack.release_final.js",
+    "build:release": "yarn build && yarn webpack -r @babel/register --config target/ts/_Build/webpack.release.js",
+    "build:stats": "yarn build && yarn webpack -r @babel/register --config target/ts/_Build/webpack.stats.js --profile",
+    "clean": "yarn clean:node_modules & yarn clean:target",
+    "clean:node_modules": "rimraf node_modules",
+    "clean:target": "rimraf target",
+    "lint": "eslint ts/**",
+    "serve:dev": "webpack-dev-server -r @babel/register --config target/ts/_Build/webpack.dev.js --liveReload false",
+    "serve:release_final": "webpack-dev-server -r @babel/register --config target/ts/_Build/webpack.release_final.js --liveReload false",
+    "watch": "ttsc -b --w"
+  },
+  "sideEffects": [
+    "**/asset.js",
+    "*.css"
+  ]
+}

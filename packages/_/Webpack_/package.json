@@ -1,0 +1,39 @@
+{
+  "name": "Webpack_",
+  "version": "1.0.0",
+  "description": "Webpack_",
+  "author": "Tyler Wolf Leonhardt",
+  "private": true,
+  "main": "./target/ts/index.js",
+  "types": "./target/ts/index.d.ts",
+  "devDependencies": {
+    "@types/html-webpack-plugin": "^3.2.0",
+    "@types/mini-css-extract-plugin": "^0.8.0",
+    "@types/webpack": "^4.4.27",
+    "@types/webpack-bundle-analyzer": "^2.13.1",
+    "@types/webpack-dev-server": "^3.1.7",
+    "@types/webpack-merge": "^4.1.5",
+    "@types/webpack-node-externals": "^1.6.3",
+    "css-loader": "^3.1.0",
+    "file-loader": "^4.1.0",
+    "html-webpack-plugin": "^3.2.0",
+    "mini-css-extract-plugin": "^0.8.0",
+    "source-map-loader": "^0.2.4",
+    "stats-webpack-plugin": "^0.7.0",
+    "style-loader": "^1.0.0",
+    "webpack": "^4.30.0",
+    "webpack-bundle-analyzer": "^3.3.2",
+    "webpack-cli": "^3.3.1",
+    "webpack-dev-server": "^3.7.2",
+    "webpack-merge": "^4.2.1",
+    "webpack-node-externals": "^1.7.2"
+  },
+  "scripts": {
+    "build": "ttsc -b",
+    "clean": "yarn clean:node_modules & yarn clean:target",
+    "clean:node_modules": "rimraf node_modules",
+    "clean:target": "rimraf target",
+    "watch": "ttsc -b --w"
+  },
+  "sideEffects": false
+}
