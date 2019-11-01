@@ -8,6 +8,8 @@ const emo = {
   circle: (size: number, borderThickness: number) => Emotion.css`
     height: ${size}px;
     width: ${size}px;
+    min-height: ${size}px;
+    min-width: ${size}px;
     border: ${borderThickness}px solid black;
     border-radius: 50%;
     display: flex;
@@ -32,24 +34,36 @@ const emo = {
     align-items: center;
   `,
 
-  letter: (lineHeight: number) => Emotion.css`
+  letter: (lineHeight: number, fontSize: number) => Emotion.css`
     position: absolute;
     line-height: ${lineHeight}px;
     font-family: "Arial Rounded MT Bold";
+    font-size: ${fontSize}px;
   `,
 
-  circleLetter: (angleDeg: number, radius: number, lineHeight: number) => {
+  circleLetter: (
+    angleDeg: number,
+    radius: number,
+    lineHeight: number,
+    fontSize: number,
+    fontSizeDivisor: number,
+  ) => {
     const angleRad = degToRad(angleDeg);
     return Emotion.css`
-      ${emo.letter(lineHeight)};
-      left: ${radius * Math.cos(angleRad)}px;
+      ${emo.letter(lineHeight, fontSize)};
+      left: ${radius * Math.cos(angleRad) - fontSize / fontSizeDivisor}px;
       bottom: ${radius * Math.sin(angleRad)}px;
     `;
   },
 
-  centerLetter: (lineHeight: number) => Emotion.css`
-    ${emo.letter(lineHeight)};
+  centerLetter: (
+    lineHeight: number,
+    fontSize: number,
+    fontSizeDivisor: number,
+  ) => Emotion.css`
+    ${emo.letter(lineHeight, fontSize)};
     top: -${lineHeight}px;
+    left: ${-fontSize / fontSizeDivisor}px
   `,
 } as const;
 
@@ -96,86 +110,84 @@ const Line = (props: {
   );
 };
 
-const Lines = React.memo(
-  (props: {
-    readonly bigCircleDiameter: number;
-    readonly smallCircleDiameter: number;
-    readonly borderThickness: number;
-  }) => {
-    const linesProps = props;
+const Lines = (props: {
+  readonly bigCircleDiameter: number;
+  readonly smallCircleDiameter: number;
+  readonly borderThickness: number;
+}) => {
+  const linesProps = props;
 
-    const line00Angle = degToRad(15);
-    const line01Angle = degToRad(45);
-    const line02Angle = degToRad(75);
-    const line03Angle = degToRad(105);
-    const line04Angle = degToRad(135);
-    const line05Angle = degToRad(165);
-    const line06Angle = degToRad(195);
-    const line07Angle = degToRad(225);
-    const line08Angle = degToRad(255);
-    const line09Angle = degToRad(285);
-    const line10Angle = degToRad(315);
-    const line11Angle = degToRad(345);
+  const line00Angle = degToRad(15);
+  const line01Angle = degToRad(45);
+  const line02Angle = degToRad(75);
+  const line03Angle = degToRad(105);
+  const line04Angle = degToRad(135);
+  const line05Angle = degToRad(165);
+  const line06Angle = degToRad(195);
+  const line07Angle = degToRad(225);
+  const line08Angle = degToRad(255);
+  const line09Angle = degToRad(285);
+  const line10Angle = degToRad(315);
+  const line11Angle = degToRad(345);
 
-    const line00Cos = Math.cos(line00Angle);
-    const line00Sin = Math.sin(line00Angle);
-    const line01Cos = Math.cos(line01Angle);
-    const line01Sin = Math.sin(line01Angle);
-    const line02Cos = Math.cos(line02Angle);
-    const line02Sin = Math.sin(line02Angle);
-    const line03Cos = Math.cos(line03Angle);
-    const line03Sin = Math.sin(line03Angle);
-    const line04Cos = Math.cos(line04Angle);
-    const line04Sin = Math.sin(line04Angle);
-    const line05Cos = Math.cos(line05Angle);
-    const line05Sin = Math.sin(line05Angle);
-    const line06Cos = Math.cos(line06Angle);
-    const line06Sin = Math.sin(line06Angle);
-    const line07Cos = Math.cos(line07Angle);
-    const line07Sin = Math.sin(line07Angle);
-    const line08Cos = Math.cos(line08Angle);
-    const line08Sin = Math.sin(line08Angle);
-    const line09Cos = Math.cos(line09Angle);
-    const line09Sin = Math.sin(line09Angle);
-    const line10Cos = Math.cos(line10Angle);
-    const line10Sin = Math.sin(line10Angle);
-    const line11Cos = Math.cos(line11Angle);
-    const line11Sin = Math.sin(line11Angle);
+  const line00Cos = Math.cos(line00Angle);
+  const line00Sin = Math.sin(line00Angle);
+  const line01Cos = Math.cos(line01Angle);
+  const line01Sin = Math.sin(line01Angle);
+  const line02Cos = Math.cos(line02Angle);
+  const line02Sin = Math.sin(line02Angle);
+  const line03Cos = Math.cos(line03Angle);
+  const line03Sin = Math.sin(line03Angle);
+  const line04Cos = Math.cos(line04Angle);
+  const line04Sin = Math.sin(line04Angle);
+  const line05Cos = Math.cos(line05Angle);
+  const line05Sin = Math.sin(line05Angle);
+  const line06Cos = Math.cos(line06Angle);
+  const line06Sin = Math.sin(line06Angle);
+  const line07Cos = Math.cos(line07Angle);
+  const line07Sin = Math.sin(line07Angle);
+  const line08Cos = Math.cos(line08Angle);
+  const line08Sin = Math.sin(line08Angle);
+  const line09Cos = Math.cos(line09Angle);
+  const line09Sin = Math.sin(line09Angle);
+  const line10Cos = Math.cos(line10Angle);
+  const line10Sin = Math.sin(line10Angle);
+  const line11Cos = Math.cos(line11Angle);
+  const line11Sin = Math.sin(line11Angle);
 
-    const startMultiplier = props.smallCircleDiameter / props.bigCircleDiameter;
+  const startMultiplier = props.smallCircleDiameter / props.bigCircleDiameter;
 
-    const LineFromCosSin = (props: {
-      readonly cos: number;
-      readonly sin: number;
-    }) => (
-      <Line
-        bigCircleDiameter={linesProps.bigCircleDiameter}
-        borderThickness={linesProps.borderThickness}
-        startX={startMultiplier * props.cos}
-        startY={startMultiplier * props.sin}
-        endX={props.cos}
-        endY={props.sin}
-      />
-    );
+  const LineFromCosSin = (props: {
+    readonly cos: number;
+    readonly sin: number;
+  }) => (
+    <Line
+      bigCircleDiameter={linesProps.bigCircleDiameter}
+      borderThickness={linesProps.borderThickness}
+      startX={startMultiplier * props.cos}
+      startY={startMultiplier * props.sin}
+      endX={props.cos}
+      endY={props.sin}
+    />
+  );
 
-    return (
-      <>
-        <LineFromCosSin cos={line00Cos} sin={line00Sin} />
-        <LineFromCosSin cos={line01Cos} sin={line01Sin} />
-        <LineFromCosSin cos={line02Cos} sin={line02Sin} />
-        <LineFromCosSin cos={line03Cos} sin={line03Sin} />
-        <LineFromCosSin cos={line04Cos} sin={line04Sin} />
-        <LineFromCosSin cos={line05Cos} sin={line05Sin} />
-        <LineFromCosSin cos={line06Cos} sin={line06Sin} />
-        <LineFromCosSin cos={line07Cos} sin={line07Sin} />
-        <LineFromCosSin cos={line08Cos} sin={line08Sin} />
-        <LineFromCosSin cos={line09Cos} sin={line09Sin} />
-        <LineFromCosSin cos={line10Cos} sin={line10Sin} />
-        <LineFromCosSin cos={line11Cos} sin={line11Sin} />
-      </>
-    );
-  },
-);
+  return (
+    <>
+      <LineFromCosSin cos={line00Cos} sin={line00Sin} />
+      <LineFromCosSin cos={line01Cos} sin={line01Sin} />
+      <LineFromCosSin cos={line02Cos} sin={line02Sin} />
+      <LineFromCosSin cos={line03Cos} sin={line03Sin} />
+      <LineFromCosSin cos={line04Cos} sin={line04Sin} />
+      <LineFromCosSin cos={line05Cos} sin={line05Sin} />
+      <LineFromCosSin cos={line06Cos} sin={line06Sin} />
+      <LineFromCosSin cos={line07Cos} sin={line07Sin} />
+      <LineFromCosSin cos={line08Cos} sin={line08Sin} />
+      <LineFromCosSin cos={line09Cos} sin={line09Sin} />
+      <LineFromCosSin cos={line10Cos} sin={line10Sin} />
+      <LineFromCosSin cos={line11Cos} sin={line11Sin} />
+    </>
+  );
+};
 
 export const GamepadDot = (props: {
   readonly bigCircleRadius: number;
@@ -188,7 +200,7 @@ export const GamepadDot = (props: {
     (props.x === undefined ? 0 : props.x) * props.bigCircleRadius +
     halfCircleBorderThickness;
   const actualY =
-    -(props.y === undefined ? 0 : props.y) * props.bigCircleRadius +
+    (props.y === undefined ? 0 : props.y) * props.bigCircleRadius +
     halfCircleBorderThickness;
 
   const size = "5px";
@@ -217,8 +229,16 @@ export const Home = () => {
   const letterOffset = bigCircleRadius - circleBorderSize;
   const letterCircleRadius = (bigCircleRadius + smallCircleRadius) / 2;
   const lineHeight = 10;
+  const fontSize = 36;
+  const fontSizeDivisor = 6;
   const circleLetter = (angle: number) =>
-    emo.circleLetter(angle, letterCircleRadius, lineHeight);
+    emo.circleLetter(
+      angle,
+      letterCircleRadius,
+      lineHeight,
+      fontSize,
+      fontSizeDivisor,
+    );
 
   const [gamepadId, setGamepadId] = React.useState<number | undefined>();
 
@@ -245,9 +265,9 @@ export const Home = () => {
       const gamepad = navigator.getGamepads()[gamepadId];
       if (gamepad === null) return;
       if (gamepad.axes[0] !== leftX) setLeftX(gamepad.axes[0]);
-      if (gamepad.axes[1] !== leftY) setLeftY(gamepad.axes[1]);
+      if (-gamepad.axes[1] !== leftY) setLeftY(-gamepad.axes[1]);
       if (gamepad.axes[2] !== rightX) setRightX(gamepad.axes[2]);
-      if (gamepad.axes[3] !== rightY) setRightY(gamepad.axes[3]);
+      if (-gamepad.axes[3] !== rightY) setRightY(-gamepad.axes[3]);
 
       requestRef.current = requestAnimationFrame(updateGamepad);
     };
@@ -261,24 +281,35 @@ export const Home = () => {
     };
   }, [leftX, leftY, rightX, rightY, gamepadId]);
 
+  // const leftAngle =
+  //   leftY === undefined || leftX === undefined ? 0 : Math.atan2(leftY, leftX);
+  // const leftYOrZero = leftY ?? 0;
+  // const leftMagnitudeSq = leftY * leftY + leftX * leftX;
+  // const rightAngle =
+  //   leftY === undefined || leftX === undefined ? 0 : Math.atan2(leftY, leftX);
+
   return (
     <div className={emo.horizontal()}>
       <div className={emo.circle(bigCircleDiameter, circleBorderSize)}>
         <div className={emo.circle(smallCircleDiameter, circleBorderSize)} />
         <div className={emo.letters(letterOffset)}>
-          <div className={circleLetter(90)}>A</div>
-          <div className={circleLetter(60)}>B</div>
-          <div className={circleLetter(30)}>C</div>
-          <div className={circleLetter(0)}>D</div>
-          <div className={circleLetter(330)}>F</div>
-          <div className={circleLetter(300)}>G</div>
-          <div className={circleLetter(270)}>H</div>
-          <div className={circleLetter(240)}>I</div>
-          <div className={circleLetter(210)}>J</div>
-          <div className={circleLetter(180)}>K</div>
-          <div className={circleLetter(150)}>L</div>
-          <div className={circleLetter(120)}>M</div>
-          <div className={emo.centerLetter(lineHeight)}>E</div>
+          <div className={circleLetter(90)}>R</div>
+          <div className={circleLetter(60)}>G</div>
+          <div className={circleLetter(30)}>V</div>
+          <div className={circleLetter(0)}>F</div>
+          <div className={circleLetter(330)}>D</div>
+          <div className={circleLetter(300)}>C</div>
+          <div className={circleLetter(270)}>X</div>
+          <div className={circleLetter(240)}>Z</div>
+          <div className={circleLetter(210)}>S</div>
+          <div className={circleLetter(180)}>A</div>
+          <div className={circleLetter(150)}>Q</div>
+          <div className={circleLetter(120)}>W</div>
+          <div
+            className={emo.centerLetter(lineHeight, fontSize, fontSizeDivisor)}
+          >
+            E
+          </div>
           <Lines
             bigCircleDiameter={bigCircleDiameter}
             smallCircleDiameter={smallCircleDiameter}
@@ -295,19 +326,23 @@ export const Home = () => {
       <div className={emo.circle(bigCircleDiameter, circleBorderSize)}>
         <div className={emo.circle(smallCircleDiameter, circleBorderSize)} />
         <div className={emo.letters(letterOffset)}>
-          <div className={circleLetter(90)}>N</div>
+          <div className={circleLetter(90)}>I</div>
           <div className={circleLetter(60)}>O</div>
           <div className={circleLetter(30)}>P</div>
-          <div className={circleLetter(0)}>Q</div>
-          <div className={circleLetter(330)}>R</div>
-          <div className={circleLetter(300)}>S</div>
-          <div className={circleLetter(270)}>U</div>
-          <div className={circleLetter(240)}>V</div>
-          <div className={circleLetter(210)}>W</div>
-          <div className={circleLetter(180)}>X</div>
+          <div className={circleLetter(0)}>L</div>
+          <div className={circleLetter(330)}>K</div>
+          <div className={circleLetter(300)}>M</div>
+          <div className={circleLetter(270)}>N</div>
+          <div className={circleLetter(240)}>B</div>
+          <div className={circleLetter(210)}>H</div>
+          <div className={circleLetter(180)}>J</div>
           <div className={circleLetter(150)}>Y</div>
-          <div className={circleLetter(120)}>Z</div>
-          <div className={emo.centerLetter(lineHeight)}>T</div>
+          <div className={circleLetter(120)}>U</div>
+          <div
+            className={emo.centerLetter(lineHeight, fontSize, fontSizeDivisor)}
+          >
+            T
+          </div>
           <Lines
             bigCircleDiameter={bigCircleDiameter}
             smallCircleDiameter={smallCircleDiameter}
