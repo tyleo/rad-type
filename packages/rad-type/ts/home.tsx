@@ -3,6 +3,7 @@ import * as React from "react";
 import * as Emotion from "emotion";
 
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
+const radToDeg = (rad: number) => (rad * 180) / Math.PI;
 
 const emo = {
   circle: (size: number) => Emotion.css`
@@ -120,6 +121,7 @@ const RingSegment = (props: {
   readonly endRadius: number;
   readonly startLine: ILineData;
   readonly endLine: ILineData;
+  readonly shouldHighlight: boolean;
 }) => {
   const [svgStyle, data] = React.useMemo(() => {
     const offset = -(props.boxSize / 2);
@@ -171,13 +173,21 @@ const RingSegment = (props: {
     props.endLine,
   ]);
 
+  const actualStyle = React.useMemo(
+    () =>
+      props.shouldHighlight
+        ? { ...svgStyle, fill: "rgba(200, 255, 200, 1)" }
+        : svgStyle,
+    [props.shouldHighlight, svgStyle],
+  );
+
   return (
     <svg
       height={props.boxSize + props.borderThickness * 2}
       width={props.boxSize + props.borderThickness * 2}
       viewBox="-1,-1,2,2"
       transform="scale(1, -1)"
-      style={svgStyle}
+      style={actualStyle}
     >
       <path d={data} />
     </svg>
@@ -196,6 +206,7 @@ const RingSegments = (props: {
   readonly bigCircleDiameter: number;
   readonly smallCircleDiameter: number;
   readonly borderThickness: number;
+  readonly segmentWithDot: number | undefined;
 }) => {
   const outerProps = props;
 
@@ -217,6 +228,7 @@ const RingSegments = (props: {
     () => (props: {
       readonly startLine: ILineData;
       readonly endLine: ILineData;
+      readonly shouldHightlight: boolean;
     }) => {
       return (
         <RingSegment
@@ -226,6 +238,7 @@ const RingSegments = (props: {
           endRadius={1}
           startLine={props.startLine}
           endLine={props.endLine}
+          shouldHighlight={props.shouldHightlight}
         />
       );
     },
@@ -234,18 +247,66 @@ const RingSegments = (props: {
 
   return (
     <>
-      <RingSegmentMemo startLine={lineData[0]} endLine={lineData[1]} />
-      <RingSegmentMemo startLine={lineData[1]} endLine={lineData[2]} />
-      <RingSegmentMemo startLine={lineData[2]} endLine={lineData[3]} />
-      <RingSegmentMemo startLine={lineData[3]} endLine={lineData[4]} />
-      <RingSegmentMemo startLine={lineData[4]} endLine={lineData[5]} />
-      <RingSegmentMemo startLine={lineData[5]} endLine={lineData[6]} />
-      <RingSegmentMemo startLine={lineData[6]} endLine={lineData[7]} />
-      <RingSegmentMemo startLine={lineData[7]} endLine={lineData[8]} />
-      <RingSegmentMemo startLine={lineData[8]} endLine={lineData[9]} />
-      <RingSegmentMemo startLine={lineData[9]} endLine={lineData[10]} />
-      <RingSegmentMemo startLine={lineData[10]} endLine={lineData[11]} />
-      <RingSegmentMemo startLine={lineData[11]} endLine={lineData[0]} />
+      <RingSegmentMemo
+        startLine={lineData[0]}
+        endLine={lineData[1]}
+        shouldHightlight={props.segmentWithDot === 0}
+      />
+      <RingSegmentMemo
+        startLine={lineData[1]}
+        endLine={lineData[2]}
+        shouldHightlight={props.segmentWithDot === 1}
+      />
+      <RingSegmentMemo
+        startLine={lineData[2]}
+        endLine={lineData[3]}
+        shouldHightlight={props.segmentWithDot === 2}
+      />
+      <RingSegmentMemo
+        startLine={lineData[3]}
+        endLine={lineData[4]}
+        shouldHightlight={props.segmentWithDot === 3}
+      />
+      <RingSegmentMemo
+        startLine={lineData[4]}
+        endLine={lineData[5]}
+        shouldHightlight={props.segmentWithDot === 4}
+      />
+      <RingSegmentMemo
+        startLine={lineData[5]}
+        endLine={lineData[6]}
+        shouldHightlight={props.segmentWithDot === 5}
+      />
+      <RingSegmentMemo
+        startLine={lineData[6]}
+        endLine={lineData[7]}
+        shouldHightlight={props.segmentWithDot === 6}
+      />
+      <RingSegmentMemo
+        startLine={lineData[7]}
+        endLine={lineData[8]}
+        shouldHightlight={props.segmentWithDot === 7}
+      />
+      <RingSegmentMemo
+        startLine={lineData[8]}
+        endLine={lineData[9]}
+        shouldHightlight={props.segmentWithDot === 8}
+      />
+      <RingSegmentMemo
+        startLine={lineData[9]}
+        endLine={lineData[10]}
+        shouldHightlight={props.segmentWithDot === 9}
+      />
+      <RingSegmentMemo
+        startLine={lineData[10]}
+        endLine={lineData[11]}
+        shouldHightlight={props.segmentWithDot === 10}
+      />
+      <RingSegmentMemo
+        startLine={lineData[11]}
+        endLine={lineData[0]}
+        shouldHightlight={props.segmentWithDot === 11}
+      />
     </>
   );
 };
@@ -400,24 +461,61 @@ export const Home = () => {
     };
   }, [leftX, leftY, rightX, rightY, gamepadId]);
 
-  // const leftAngle =
-  //   leftY === undefined || leftX === undefined ? 0 : Math.atan2(leftY, leftX);
-  // const leftXOrZero = leftX === undefined ? 0 : leftX;
-  // const leftYOrZero = leftY === undefined ? 0 : leftY;
-  // const leftMagnitudeSq = leftYOrZero * leftYOrZero + leftXOrZero * leftXOrZero;
+  let leftAngle =
+    leftY === undefined || leftX === undefined
+      ? 0
+      : radToDeg(Math.atan2(leftY, leftX));
+  leftAngle = leftAngle < 0 ? 360 + leftAngle : leftAngle;
+  const leftXOrZero = leftX === undefined ? 0 : leftX;
+  const leftYOrZero = leftY === undefined ? 0 : leftY;
+  const leftMagnitudeSq = leftYOrZero * leftYOrZero + leftXOrZero * leftXOrZero;
 
-  // const rightAngle =
-  //   leftY === undefined || leftX === undefined ? 0 : Math.atan2(leftY, leftX);
-  // const rightXOrZero = rightX === undefined ? 0 : rightX;
-  // const rightYOrZero = rightY === undefined ? 0 : rightY;
-  // const rightMagnitudeSq =
-  //   rightYOrZero * rightYOrZero + rightXOrZero * rightXOrZero;
+  let leftSegmentWithDot = undefined;
+  if (leftMagnitudeSq > 0.8) {
+    leftSegmentWithDot = 11;
+    for (let i = 375; i > 0; i -= 30) {
+      if (leftAngle <= i && leftAngle > i - 30) {
+        break;
+      }
+      --leftSegmentWithDot;
+    }
+    leftSegmentWithDot = leftSegmentWithDot < 0 ? 11 : leftSegmentWithDot;
+  }
+
+  let rightAngle =
+    rightY === undefined || rightX === undefined
+      ? 0
+      : radToDeg(Math.atan2(rightY, rightX));
+  rightAngle = rightAngle < 0 ? 360 + rightAngle : rightAngle;
+  const rightXOrZero = rightX === undefined ? 0 : rightX;
+  const rightYOrZero = rightY === undefined ? 0 : rightY;
+  const rightMagnitudeSq =
+    rightYOrZero * rightYOrZero + rightXOrZero * rightXOrZero;
+
+  let rightSegmentWithDot = undefined;
+  if (rightMagnitudeSq > 0.8) {
+    rightSegmentWithDot = 11;
+    for (let i = 375; i > 0; i -= 30) {
+      if (rightAngle <= i && rightAngle > i - 30) {
+        break;
+      }
+      --rightSegmentWithDot;
+    }
+    rightSegmentWithDot = rightSegmentWithDot < 0 ? 11 : rightSegmentWithDot;
+  }
 
   return (
     <div className={emo.horizontal()}>
       <div className={emo.circle(bigCircleDiameter)}>
         <div className={emo.circle(smallCircleDiameter)} />
         <div className={emo.letters(letterOffset)}>
+          <GamepadDot x={leftX} y={leftY} bigCircleRadius={bigCircleRadius} />
+          <RingSegments
+            bigCircleDiameter={bigCircleDiameter}
+            smallCircleDiameter={smallCircleDiameter}
+            borderThickness={circleBorderSize}
+            segmentWithDot={leftSegmentWithDot}
+          />
           <div className={circleLetter(90)}>R</div>
           <div className={circleLetter(60)}>G</div>
           <div className={circleLetter(30)}>V</div>
@@ -435,22 +533,18 @@ export const Home = () => {
           >
             E
           </div>
-          {/* <Lines
-            bigCircleDiameter={bigCircleDiameter}
-            smallCircleDiameter={smallCircleDiameter}
-            borderThickness={circleBorderSize}
-          /> */}
-          <RingSegments
-            bigCircleDiameter={bigCircleDiameter}
-            smallCircleDiameter={smallCircleDiameter}
-            borderThickness={circleBorderSize}
-          />
-          <GamepadDot x={leftX} y={leftY} bigCircleRadius={bigCircleRadius} />
         </div>
       </div>
       <div className={emo.circle(bigCircleDiameter)}>
         <div className={emo.circle(smallCircleDiameter)} />
         <div className={emo.letters(letterOffset)}>
+          <RingSegments
+            bigCircleDiameter={bigCircleDiameter}
+            smallCircleDiameter={smallCircleDiameter}
+            borderThickness={circleBorderSize}
+            segmentWithDot={rightSegmentWithDot}
+          />
+          <GamepadDot x={rightX} y={rightY} bigCircleRadius={bigCircleRadius} />
           <div className={circleLetter(90)}>I</div>
           <div className={circleLetter(60)}>O</div>
           <div className={circleLetter(30)}>P</div>
@@ -468,17 +562,6 @@ export const Home = () => {
           >
             T
           </div>
-          {/* <Lines
-            bigCircleDiameter={bigCircleDiameter}
-            smallCircleDiameter={smallCircleDiameter}
-            borderThickness={circleBorderSize}
-          /> */}
-          <RingSegments
-            bigCircleDiameter={bigCircleDiameter}
-            smallCircleDiameter={smallCircleDiameter}
-            borderThickness={circleBorderSize}
-          />
-          <GamepadDot x={rightX} y={rightY} bigCircleRadius={bigCircleRadius} />
         </div>
       </div>
     </div>
