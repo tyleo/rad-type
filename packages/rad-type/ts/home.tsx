@@ -5,13 +5,11 @@ import * as Emotion from "emotion";
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
 
 const emo = {
-  circle: (size: number, borderThickness: number) => Emotion.css`
+  circle: (size: number) => Emotion.css`
     height: ${size}px;
     width: ${size}px;
     min-height: ${size}px;
     min-width: ${size}px;
-    border: ${borderThickness}px solid black;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -110,6 +108,148 @@ const Line = (props: {
   );
 };
 
+interface ILineData {
+  readonly cos: number;
+  readonly sin: number;
+}
+
+const RingSegment = (props: {
+  readonly boxSize: number;
+  readonly borderThickness: number;
+  readonly startRadius: number;
+  readonly endRadius: number;
+  readonly startLine: ILineData;
+  readonly endLine: ILineData;
+}) => {
+  const [svgStyle, data] = React.useMemo(() => {
+    const offset = -(props.boxSize / 2);
+    const scaledBorderThickness = (props.borderThickness * 2) / props.boxSize;
+    const startRadius = props.startRadius - scaledBorderThickness;
+    const endRadius = props.endRadius - scaledBorderThickness;
+    const innerStart = {
+      X: props.startLine.cos * startRadius,
+      Y: props.startLine.sin * startRadius,
+    } as const;
+    const outerStart = {
+      X: props.startLine.cos * endRadius,
+      Y: props.startLine.sin * endRadius,
+    } as const;
+    const outerEnd = {
+      X: props.endLine.cos * endRadius,
+      Y: props.endLine.sin * endRadius,
+    } as const;
+    const innerEnd = {
+      X: props.endLine.cos * startRadius,
+      Y: props.endLine.sin * startRadius,
+    } as const;
+
+    const data =
+      `M ${innerStart.X} ${innerStart.Y}` +
+      `L ${outerStart.X} ${outerStart.Y}` +
+      `A ${props.endRadius} ${props.endRadius} 0 0 1 ${outerEnd.X} ${outerEnd.Y}` +
+      `L ${innerEnd.X} ${innerEnd.Y}` +
+      `A ${props.startRadius} ${props.startRadius} 0 0 0 ${innerStart.X} ${innerStart.Y}` +
+      `Z`;
+
+    return [
+      {
+        position: "absolute",
+        fill: "rgba(255, 255, 255, 0)",
+        left: offset,
+        bottom: offset,
+        stroke: "rgb(0,0,0)",
+        strokeWidth: scaledBorderThickness,
+      } as const,
+      data,
+    ];
+  }, [
+    props.boxSize,
+    props.borderThickness,
+    props.startRadius,
+    props.endRadius,
+    props.startLine,
+    props.endLine,
+  ]);
+
+  return (
+    <svg
+      height={props.boxSize + props.borderThickness * 2}
+      width={props.boxSize + props.borderThickness * 2}
+      viewBox="-1,-1,2,2"
+      transform="scale(1, -1)"
+      style={svgStyle}
+    >
+      <path d={data} />
+    </svg>
+  );
+};
+
+const range = (first: number, count: number): number[] => {
+  const result = [];
+  for (let i = first; i < first + count; ++i) {
+    result.push(i);
+  }
+  return result;
+};
+
+const RingSegments = (props: {
+  readonly bigCircleDiameter: number;
+  readonly smallCircleDiameter: number;
+  readonly borderThickness: number;
+}) => {
+  const outerProps = props;
+
+  const lineData: readonly ILineData[] = React.useMemo(
+    () =>
+      range(0, 12).map(i => {
+        const angle = degToRad(i * 30 + 15);
+        return {
+          cos: Math.cos(angle),
+          sin: Math.sin(angle),
+        } as const;
+      }),
+    [],
+  );
+
+  const startRadius =
+    outerProps.smallCircleDiameter / outerProps.bigCircleDiameter;
+  const RingSegmentMemo = React.useMemo(
+    () => (props: {
+      readonly startLine: ILineData;
+      readonly endLine: ILineData;
+    }) => {
+      return (
+        <RingSegment
+          boxSize={outerProps.bigCircleDiameter}
+          borderThickness={outerProps.borderThickness}
+          startRadius={startRadius}
+          endRadius={1}
+          startLine={props.startLine}
+          endLine={props.endLine}
+        />
+      );
+    },
+    [outerProps.bigCircleDiameter, outerProps.borderThickness, startRadius],
+  );
+
+  return (
+    <>
+      <RingSegmentMemo startLine={lineData[0]} endLine={lineData[1]} />
+      <RingSegmentMemo startLine={lineData[1]} endLine={lineData[2]} />
+      <RingSegmentMemo startLine={lineData[2]} endLine={lineData[3]} />
+      <RingSegmentMemo startLine={lineData[3]} endLine={lineData[4]} />
+      <RingSegmentMemo startLine={lineData[4]} endLine={lineData[5]} />
+      <RingSegmentMemo startLine={lineData[5]} endLine={lineData[6]} />
+      <RingSegmentMemo startLine={lineData[6]} endLine={lineData[7]} />
+      <RingSegmentMemo startLine={lineData[7]} endLine={lineData[8]} />
+      <RingSegmentMemo startLine={lineData[8]} endLine={lineData[9]} />
+      <RingSegmentMemo startLine={lineData[9]} endLine={lineData[10]} />
+      <RingSegmentMemo startLine={lineData[10]} endLine={lineData[11]} />
+      <RingSegmentMemo startLine={lineData[11]} endLine={lineData[0]} />
+    </>
+  );
+};
+
 const Lines = (props: {
   readonly bigCircleDiameter: number;
   readonly smallCircleDiameter: number;
@@ -117,74 +257,59 @@ const Lines = (props: {
 }) => {
   const linesProps = props;
 
-  const line00Angle = degToRad(15);
-  const line01Angle = degToRad(45);
-  const line02Angle = degToRad(75);
-  const line03Angle = degToRad(105);
-  const line04Angle = degToRad(135);
-  const line05Angle = degToRad(165);
-  const line06Angle = degToRad(195);
-  const line07Angle = degToRad(225);
-  const line08Angle = degToRad(255);
-  const line09Angle = degToRad(285);
-  const line10Angle = degToRad(315);
-  const line11Angle = degToRad(345);
+  const lineData = React.useMemo(
+    () =>
+      range(0, 12).map(i => {
+        const angle = degToRad(i * 30 + 15);
+        return {
+          angle,
+          cos: Math.cos(angle),
+          sin: Math.sin(angle),
+        };
+      }),
+    [],
+  );
 
-  const line00Cos = Math.cos(line00Angle);
-  const line00Sin = Math.sin(line00Angle);
-  const line01Cos = Math.cos(line01Angle);
-  const line01Sin = Math.sin(line01Angle);
-  const line02Cos = Math.cos(line02Angle);
-  const line02Sin = Math.sin(line02Angle);
-  const line03Cos = Math.cos(line03Angle);
-  const line03Sin = Math.sin(line03Angle);
-  const line04Cos = Math.cos(line04Angle);
-  const line04Sin = Math.sin(line04Angle);
-  const line05Cos = Math.cos(line05Angle);
-  const line05Sin = Math.sin(line05Angle);
-  const line06Cos = Math.cos(line06Angle);
-  const line06Sin = Math.sin(line06Angle);
-  const line07Cos = Math.cos(line07Angle);
-  const line07Sin = Math.sin(line07Angle);
-  const line08Cos = Math.cos(line08Angle);
-  const line08Sin = Math.sin(line08Angle);
-  const line09Cos = Math.cos(line09Angle);
-  const line09Sin = Math.sin(line09Angle);
-  const line10Cos = Math.cos(line10Angle);
-  const line10Sin = Math.sin(line10Angle);
-  const line11Cos = Math.cos(line11Angle);
-  const line11Sin = Math.sin(line11Angle);
+  const startMultiplier =
+    linesProps.smallCircleDiameter / linesProps.bigCircleDiameter;
+  const LineFromCosSin = React.useMemo(
+    () => (props: {
+      readonly lineData: {
+        readonly angle: number;
+        readonly cos: number;
+        readonly sin: number;
+      };
+    }) => {
+      const { cos, sin } = props.lineData;
 
-  const startMultiplier = props.smallCircleDiameter / props.bigCircleDiameter;
-
-  const LineFromCosSin = (props: {
-    readonly cos: number;
-    readonly sin: number;
-  }) => (
-    <Line
-      bigCircleDiameter={linesProps.bigCircleDiameter}
-      borderThickness={linesProps.borderThickness}
-      startX={startMultiplier * props.cos}
-      startY={startMultiplier * props.sin}
-      endX={props.cos}
-      endY={props.sin}
-    />
+      return (
+        <Line
+          bigCircleDiameter={linesProps.bigCircleDiameter}
+          borderThickness={linesProps.borderThickness}
+          startX={startMultiplier * cos}
+          startY={startMultiplier * sin}
+          endX={cos}
+          endY={sin}
+        />
+      );
+    },
+    [startMultiplier, linesProps.bigCircleDiameter, linesProps.borderThickness],
   );
 
   return (
     <>
-      <LineFromCosSin cos={line00Cos} sin={line00Sin} />
-      <LineFromCosSin cos={line01Cos} sin={line01Sin} />
-      <LineFromCosSin cos={line02Cos} sin={line02Sin} />
-      <LineFromCosSin cos={line03Cos} sin={line03Sin} />
-      <LineFromCosSin cos={line04Cos} sin={line04Sin} />
-      <LineFromCosSin cos={line05Cos} sin={line05Sin} />
-      <LineFromCosSin cos={line06Cos} sin={line06Sin} />
-      <LineFromCosSin cos={line07Cos} sin={line07Sin} />
-      <LineFromCosSin cos={line08Cos} sin={line08Sin} />
-      <LineFromCosSin cos={line09Cos} sin={line09Sin} />
-      <LineFromCosSin cos={line10Cos} sin={line10Sin} />
-      <LineFromCosSin cos={line11Cos} sin={line11Sin} />
+      <LineFromCosSin lineData={lineData[0]} />
+      <LineFromCosSin lineData={lineData[1]} />
+      <LineFromCosSin lineData={lineData[2]} />
+      <LineFromCosSin lineData={lineData[3]} />
+      <LineFromCosSin lineData={lineData[4]} />
+      <LineFromCosSin lineData={lineData[5]} />
+      <LineFromCosSin lineData={lineData[6]} />
+      <LineFromCosSin lineData={lineData[7]} />
+      <LineFromCosSin lineData={lineData[8]} />
+      <LineFromCosSin lineData={lineData[9]} />
+      <LineFromCosSin lineData={lineData[10]} />
+      <LineFromCosSin lineData={lineData[11]} />
     </>
   );
 };
@@ -193,15 +318,9 @@ export const GamepadDot = (props: {
   readonly bigCircleRadius: number;
   readonly x: number | undefined;
   readonly y: number | undefined;
-  readonly circleBorderThickness: number;
 }) => {
-  const halfCircleBorderThickness = props.circleBorderThickness / 2;
-  const actualX =
-    (props.x === undefined ? 0 : props.x) * props.bigCircleRadius +
-    halfCircleBorderThickness;
-  const actualY =
-    (props.y === undefined ? 0 : props.y) * props.bigCircleRadius +
-    halfCircleBorderThickness;
+  const actualX = (props.x === undefined ? 0 : props.x) * props.bigCircleRadius;
+  const actualY = (props.y === undefined ? 0 : props.y) * props.bigCircleRadius;
 
   const size = "5px";
 
@@ -229,7 +348,7 @@ export const Home = () => {
   const letterOffset = bigCircleRadius - circleBorderSize;
   const letterCircleRadius = (bigCircleRadius + smallCircleRadius) / 2;
   const lineHeight = 10;
-  const fontSize = 36;
+  const fontSize = 42;
   const fontSizeDivisor = 6;
   const circleLetter = (angle: number) =>
     emo.circleLetter(
@@ -283,15 +402,21 @@ export const Home = () => {
 
   // const leftAngle =
   //   leftY === undefined || leftX === undefined ? 0 : Math.atan2(leftY, leftX);
-  // const leftYOrZero = leftY ?? 0;
-  // const leftMagnitudeSq = leftY * leftY + leftX * leftX;
+  // const leftXOrZero = leftX === undefined ? 0 : leftX;
+  // const leftYOrZero = leftY === undefined ? 0 : leftY;
+  // const leftMagnitudeSq = leftYOrZero * leftYOrZero + leftXOrZero * leftXOrZero;
+
   // const rightAngle =
   //   leftY === undefined || leftX === undefined ? 0 : Math.atan2(leftY, leftX);
+  // const rightXOrZero = rightX === undefined ? 0 : rightX;
+  // const rightYOrZero = rightY === undefined ? 0 : rightY;
+  // const rightMagnitudeSq =
+  //   rightYOrZero * rightYOrZero + rightXOrZero * rightXOrZero;
 
   return (
     <div className={emo.horizontal()}>
-      <div className={emo.circle(bigCircleDiameter, circleBorderSize)}>
-        <div className={emo.circle(smallCircleDiameter, circleBorderSize)} />
+      <div className={emo.circle(bigCircleDiameter)}>
+        <div className={emo.circle(smallCircleDiameter)} />
         <div className={emo.letters(letterOffset)}>
           <div className={circleLetter(90)}>R</div>
           <div className={circleLetter(60)}>G</div>
@@ -310,21 +435,21 @@ export const Home = () => {
           >
             E
           </div>
-          <Lines
+          {/* <Lines
+            bigCircleDiameter={bigCircleDiameter}
+            smallCircleDiameter={smallCircleDiameter}
+            borderThickness={circleBorderSize}
+          /> */}
+          <RingSegments
             bigCircleDiameter={bigCircleDiameter}
             smallCircleDiameter={smallCircleDiameter}
             borderThickness={circleBorderSize}
           />
-          <GamepadDot
-            x={leftX}
-            y={leftY}
-            bigCircleRadius={bigCircleRadius}
-            circleBorderThickness={circleBorderSize}
-          />
+          <GamepadDot x={leftX} y={leftY} bigCircleRadius={bigCircleRadius} />
         </div>
       </div>
-      <div className={emo.circle(bigCircleDiameter, circleBorderSize)}>
-        <div className={emo.circle(smallCircleDiameter, circleBorderSize)} />
+      <div className={emo.circle(bigCircleDiameter)}>
+        <div className={emo.circle(smallCircleDiameter)} />
         <div className={emo.letters(letterOffset)}>
           <div className={circleLetter(90)}>I</div>
           <div className={circleLetter(60)}>O</div>
@@ -343,17 +468,17 @@ export const Home = () => {
           >
             T
           </div>
-          <Lines
+          {/* <Lines
+            bigCircleDiameter={bigCircleDiameter}
+            smallCircleDiameter={smallCircleDiameter}
+            borderThickness={circleBorderSize}
+          /> */}
+          <RingSegments
             bigCircleDiameter={bigCircleDiameter}
             smallCircleDiameter={smallCircleDiameter}
             borderThickness={circleBorderSize}
           />
-          <GamepadDot
-            x={rightX}
-            y={rightY}
-            bigCircleRadius={bigCircleRadius}
-            circleBorderThickness={circleBorderSize}
-          />
+          <GamepadDot x={rightX} y={rightY} bigCircleRadius={bigCircleRadius} />
         </div>
       </div>
     </div>
