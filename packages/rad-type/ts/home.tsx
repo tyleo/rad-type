@@ -109,6 +109,51 @@ const Line = (props: {
   );
 };
 
+const Circle = (props: {
+  readonly boxSize: number;
+  readonly borderThickness: number;
+  readonly radius: number;
+  readonly shouldHighlight: boolean;
+}) => {
+  const [svgStyle, radius] = React.useMemo(() => {
+    const offset = -(props.boxSize / 2);
+    const scaledBorderThickness = (props.borderThickness * 2) / props.boxSize;
+    const radius = props.radius - scaledBorderThickness;
+
+    return [
+      {
+        position: "absolute",
+        fill: "rgba(255, 255, 255, 0)",
+        left: offset,
+        bottom: offset,
+        stroke: "rgb(0,0,0)",
+        strokeWidth: scaledBorderThickness,
+      } as const,
+      radius,
+    ];
+  }, [props.boxSize, props.borderThickness, props.radius]);
+
+  const actualStyle = React.useMemo(
+    () =>
+      props.shouldHighlight
+        ? { ...svgStyle, fill: "rgba(200, 200, 255, 1)" }
+        : svgStyle,
+    [props.shouldHighlight, svgStyle],
+  );
+
+  return (
+    <svg
+      height={props.boxSize + props.borderThickness * 2}
+      width={props.boxSize + props.borderThickness * 2}
+      viewBox="-1,-1,2,2"
+      transform="scale(1, -1)"
+      style={actualStyle}
+    >
+      <circle cx={0} cy={0} r={radius} />
+    </svg>
+  );
+};
+
 interface ILineData {
   readonly cos: number;
   readonly sin: number;
@@ -176,7 +221,7 @@ const RingSegment = (props: {
   const actualStyle = React.useMemo(
     () =>
       props.shouldHighlight
-        ? { ...svgStyle, fill: "rgba(200, 255, 200, 1)" }
+        ? { ...svgStyle, fill: "rgba(200, 200, 255, 1)" }
         : svgStyle,
     [props.shouldHighlight, svgStyle],
   );
@@ -461,6 +506,9 @@ export const Home = () => {
     };
   }, [leftX, leftY, rightX, rightY, gamepadId]);
 
+  const circleRadius = smallCircleDiameter / bigCircleDiameter;
+  const circleRadiusSq = circleRadius * circleRadius;
+
   let leftAngle =
     leftY === undefined || leftX === undefined
       ? 0
@@ -471,7 +519,7 @@ export const Home = () => {
   const leftMagnitudeSq = leftYOrZero * leftYOrZero + leftXOrZero * leftXOrZero;
 
   let leftSegmentWithDot = undefined;
-  if (leftMagnitudeSq > 0.8) {
+  if (leftMagnitudeSq > circleRadiusSq) {
     leftSegmentWithDot = 11;
     for (let i = 375; i > 0; i -= 30) {
       if (leftAngle <= i && leftAngle > i - 30) {
@@ -493,7 +541,7 @@ export const Home = () => {
     rightYOrZero * rightYOrZero + rightXOrZero * rightXOrZero;
 
   let rightSegmentWithDot = undefined;
-  if (rightMagnitudeSq > 0.8) {
+  if (rightMagnitudeSq > circleRadiusSq) {
     rightSegmentWithDot = 11;
     for (let i = 375; i > 0; i -= 30) {
       if (rightAngle <= i && rightAngle > i - 30) {
@@ -509,13 +557,19 @@ export const Home = () => {
       <div className={emo.circle(bigCircleDiameter)}>
         <div className={emo.circle(smallCircleDiameter)} />
         <div className={emo.letters(letterOffset)}>
-          <GamepadDot x={leftX} y={leftY} bigCircleRadius={bigCircleRadius} />
+          <Circle
+            boxSize={bigCircleDiameter}
+            radius={circleRadius}
+            borderThickness={circleBorderSize}
+            shouldHighlight={leftSegmentWithDot === undefined}
+          />
           <RingSegments
             bigCircleDiameter={bigCircleDiameter}
             smallCircleDiameter={smallCircleDiameter}
             borderThickness={circleBorderSize}
             segmentWithDot={leftSegmentWithDot}
           />
+          <GamepadDot x={leftX} y={leftY} bigCircleRadius={bigCircleRadius} />
           <div className={circleLetter(90)}>R</div>
           <div className={circleLetter(60)}>G</div>
           <div className={circleLetter(30)}>V</div>
@@ -543,6 +597,12 @@ export const Home = () => {
             smallCircleDiameter={smallCircleDiameter}
             borderThickness={circleBorderSize}
             segmentWithDot={rightSegmentWithDot}
+          />
+          <Circle
+            boxSize={bigCircleDiameter}
+            radius={circleRadius}
+            borderThickness={circleBorderSize}
+            shouldHighlight={rightSegmentWithDot === undefined}
           />
           <GamepadDot x={rightX} y={rightY} bigCircleRadius={bigCircleRadius} />
           <div className={circleLetter(90)}>I</div>
