@@ -20,7 +20,17 @@ const range = (first: number, count: number): number[] => {
 };
 
 const emo = {
-  relative: () => Emotion.css`position: relative;`,
+  radTypeContainerRelativeContainer: (sizePx: number) => Emotion.css`
+    height: ${sizePx}px;
+    width: ${sizePx}px;
+    position: relative;
+  `,
+
+  radTypeContainerAbsoluteContainer: (offsetPx: number) => Emotion.css`
+    left: ${offsetPx}px;
+    bottom: ${offsetPx}px;
+    position: absolute;
+  `,
 
   circle: (size: number) => Emotion.css`
     height: ${size}px;
@@ -33,13 +43,13 @@ const emo = {
     position: relative;
   `,
 
-  horizontal: () => Emotion.css`
+  row: (widthPx: number, heightPx: number) => Emotion.css`
     display: flex;
-    flex-direction-row;
-    width: 100%;
-    height: 100%;
-    justify-content: space-around;
+    flex-direction: row;
+    justify-content: space-between;
     align-items: center;
+    width: ${widthPx}px;
+    height: ${heightPx}px;
   `,
 
   letter: (fontSize: number) => Emotion.css`
@@ -60,6 +70,14 @@ const emo = {
       bottom: ${radius * Math.sin(angleRad)}px;
     `;
   },
+
+  vertical: () => Emotion.css`
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    align-items: center;
+  `,
 } as const;
 
 const Circle = React.memo(
@@ -408,39 +426,41 @@ export const RadTypeVis = (props: {
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
   return (
-    <div className={emo.relative()}>
-      <Circle
-        boxSizePx={actualBoxSizePx}
-        offsetPx={offsetPx}
-        borderThicknessRation={actualBorderThicknessRation}
-        radiusRation={actualMidRadiusRation}
-        shouldHighlight={outerDotIndex === undefined}
-      />
-      <RingSegments
-        boxSizePx={actualBoxSizePx}
-        offsetPx={offsetPx}
-        borderThicknessRation={actualBorderThicknessRation}
-        startRadiusRation={actualMidRadiusRation}
-        endRadiusRation={actualOuterRadiusRation}
-        numSegments={outerKeys.length}
-        segmentAngle={outerSegmentAngle}
-        segmentOffset={outerSegmentOffset}
-        highlightedSegment={outerDotIndex}
-      />
-      <LetterCircle
-        letters={outerKeys}
-        angle={outerSegmentAngle}
-        radiusPx={outerLetterRadiusPx}
-        fontSize={fontSize}
-      />
-      <div className={emo.letter(fontSize)}>{centerKey}</div>
-      <GamepadDot
-        boxSizePx={actualBoxSizePx}
-        offsetPx={offsetPx}
-        radiusRation={actualGamepadDotRadiusRation}
-        x={actualX}
-        y={actualY}
-      />
+    <div className={emo.radTypeContainerRelativeContainer(actualBoxSizePx)}>
+      <div className={emo.radTypeContainerAbsoluteContainer(-offsetPx)}>
+        <Circle
+          boxSizePx={actualBoxSizePx}
+          offsetPx={offsetPx}
+          borderThicknessRation={actualBorderThicknessRation}
+          radiusRation={actualMidRadiusRation}
+          shouldHighlight={outerDotIndex === undefined}
+        />
+        <RingSegments
+          boxSizePx={actualBoxSizePx}
+          offsetPx={offsetPx}
+          borderThicknessRation={actualBorderThicknessRation}
+          startRadiusRation={actualMidRadiusRation}
+          endRadiusRation={actualOuterRadiusRation}
+          numSegments={outerKeys.length}
+          segmentAngle={outerSegmentAngle}
+          segmentOffset={outerSegmentOffset}
+          highlightedSegment={outerDotIndex}
+        />
+        <LetterCircle
+          letters={outerKeys}
+          angle={outerSegmentAngle}
+          radiusPx={outerLetterRadiusPx}
+          fontSize={fontSize}
+        />
+        <div className={emo.letter(fontSize)}>{centerKey}</div>
+        <GamepadDot
+          boxSizePx={actualBoxSizePx}
+          offsetPx={offsetPx}
+          radiusRation={actualGamepadDotRadiusRation}
+          x={actualX}
+          y={actualY}
+        />
+      </div>
     </div>
   );
 };
@@ -453,6 +473,8 @@ export const Home = () => {
   const smallCircleRadiusRation = smallCircleDiameterPx / bigCircleDiameterPx;
   const gamepadDotDiameterPx = 5;
   const gamepadDotRadiusRation = gamepadDotDiameterPx / bigCircleDiameterPx;
+  const rowWidthPx = 1050;
+  const rowHeightPx = 700;
 
   const [gamepadId, setGamepadId] = React.useState<number | undefined>();
 
@@ -476,35 +498,63 @@ export const Home = () => {
   });
 
   return (
-    <div className={emo.horizontal()}>
-      <RadTypeVis
-        boxSizePx={bigCircleDiameterPx}
-        lineThicknessPx={lineThicknessPx}
-        fontSize={fontSize}
-        centerKey={"E"}
-        innerKeys={[]}
-        outerKeys={["F", "V", "G", "R", "W", "Q", "A", "S", "Z", "X", "C", "D"]}
-        gamepadDotRadiusRation={gamepadDotRadiusRation}
-        innerRadiusRation={0}
-        midRadiusRation={smallCircleRadiusRation}
-        gamepadId={gamepadId}
-        xAxisId={0}
-        yAxisId={1}
-      />
-      <RadTypeVis
-        boxSizePx={bigCircleDiameterPx}
-        lineThicknessPx={lineThicknessPx}
-        fontSize={fontSize}
-        centerKey={"T"}
-        innerKeys={[]}
-        outerKeys={["L", "P", "O", "I", "U", "Y", "J", "H", "B", "N", "M", "K"]}
-        gamepadDotRadiusRation={gamepadDotRadiusRation}
-        innerRadiusRation={0}
-        midRadiusRation={smallCircleRadiusRation}
-        gamepadId={gamepadId}
-        xAxisId={2}
-        yAxisId={3}
-      />
+    <div className={emo.vertical()}>
+      <div className={emo.row(rowWidthPx, rowHeightPx)}>
+        <RadTypeVis
+          boxSizePx={bigCircleDiameterPx}
+          lineThicknessPx={lineThicknessPx}
+          fontSize={fontSize}
+          centerKey={"E"}
+          innerKeys={[]}
+          outerKeys={[
+            "F",
+            "V",
+            "G",
+            "R",
+            "W",
+            "Q",
+            "A",
+            "S",
+            "Z",
+            "X",
+            "C",
+            "D",
+          ]}
+          gamepadDotRadiusRation={gamepadDotRadiusRation}
+          innerRadiusRation={0}
+          midRadiusRation={smallCircleRadiusRation}
+          gamepadId={gamepadId}
+          xAxisId={0}
+          yAxisId={1}
+        />
+        <RadTypeVis
+          boxSizePx={bigCircleDiameterPx}
+          lineThicknessPx={lineThicknessPx}
+          fontSize={fontSize}
+          centerKey={"T"}
+          innerKeys={[]}
+          outerKeys={[
+            "L",
+            "P",
+            "O",
+            "I",
+            "U",
+            "Y",
+            "J",
+            "H",
+            "B",
+            "N",
+            "M",
+            "K",
+          ]}
+          gamepadDotRadiusRation={gamepadDotRadiusRation}
+          innerRadiusRation={0}
+          midRadiusRation={smallCircleRadiusRation}
+          gamepadId={gamepadId}
+          xAxisId={2}
+          yAxisId={3}
+        />
+      </div>
     </div>
   );
 };
