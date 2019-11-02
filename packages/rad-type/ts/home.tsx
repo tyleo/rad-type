@@ -2,10 +2,26 @@ import * as React from "react";
 
 import * as Emotion from "emotion";
 
+interface ILineData {
+  readonly cos: number;
+  readonly sin: number;
+}
+
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
+
 const radToDeg = (rad: number) => (rad * 180) / Math.PI;
 
+const range = (first: number, count: number): number[] => {
+  const result = [];
+  for (let i = first; i < first + count; ++i) {
+    result.push(i);
+  }
+  return result;
+};
+
 const emo = {
+  relative: () => Emotion.css`position: relative;`,
+
   circle: (size: number) => Emotion.css`
     height: ${size}px;
     width: ${size}px;
@@ -17,13 +33,6 @@ const emo = {
     position: relative;
   `,
 
-  letters: (offset: number) => Emotion.css`
-    position: absolute;
-    left: ${offset}px;
-    bottom: ${offset}px;
-    display: block;
-  `,
-
   horizontal: () => Emotion.css`
     display: flex;
     flex-direction-row;
@@ -33,444 +42,419 @@ const emo = {
     align-items: center;
   `,
 
-  letter: (lineHeight: number, fontSize: number) => Emotion.css`
+  letter: (fontSize: number) => Emotion.css`
     position: absolute;
-    line-height: ${lineHeight}px;
+    display: flex;
+    line-height: 0px;
+    justify-content: center;
     font-family: "Arial Rounded MT Bold";
     font-size: ${fontSize}px;
+    width: 0px;
   `,
 
-  circleLetter: (
-    angleDeg: number,
-    radius: number,
-    lineHeight: number,
-    fontSize: number,
-    fontSizeDivisor: number,
-  ) => {
+  circleLetter: (angleDeg: number, radius: number, fontSize: number) => {
     const angleRad = degToRad(angleDeg);
     return Emotion.css`
-      ${emo.letter(lineHeight, fontSize)};
-      left: ${radius * Math.cos(angleRad) - fontSize / fontSizeDivisor}px;
+      ${emo.letter(fontSize)};
+      left: ${radius * Math.cos(angleRad)}px;
       bottom: ${radius * Math.sin(angleRad)}px;
     `;
   },
-
-  centerLetter: (
-    lineHeight: number,
-    fontSize: number,
-    fontSizeDivisor: number,
-  ) => Emotion.css`
-    ${emo.letter(lineHeight, fontSize)};
-    top: -${lineHeight}px;
-    left: ${-fontSize / fontSizeDivisor}px
-  `,
 } as const;
 
-const Line = (props: {
-  readonly bigCircleDiameter: number;
-  readonly borderThickness: number;
-  readonly startX: number;
-  readonly startY: number;
-  readonly endX: number;
-  readonly endY: number;
-}) => {
-  const bigCircleRadius = props.bigCircleDiameter / 2;
-  const [svgStyle, lineStyle] = React.useMemo(
-    () =>
-      [
-        {
+const Circle = React.memo(
+  (props: {
+    readonly boxSizePx: number;
+    readonly offsetPx: number;
+    readonly borderThicknessRation: number;
+    readonly radiusRation: number;
+    readonly shouldHighlight: boolean;
+  }) => {
+    const style = React.useMemo(
+      () =>
+        ({
           position: "absolute",
-          left: -(bigCircleRadius - props.borderThickness),
-          bottom: -(bigCircleRadius - props.borderThickness),
-        } as const,
-        {
+          fill: props.shouldHighlight
+            ? "rgba(200, 200, 255, 1)"
+            : "transparent",
+          left: props.offsetPx,
+          bottom: props.offsetPx,
+          stroke: "black",
+          strokeWidth: props.borderThicknessRation,
+          width: props.boxSizePx,
+          height: props.boxSizePx,
+          transform: "scale(1, -1)",
+        } as const),
+      [
+        props.shouldHighlight,
+        props.offsetPx,
+        props.borderThicknessRation,
+        props.boxSizePx,
+      ],
+    );
+
+    return (
+      <svg viewBox="-1,-1,2,2" style={style}>
+        <circle cx={0} cy={0} r={props.radiusRation} />
+      </svg>
+    );
+  },
+);
+
+const RingSegment = React.memo(
+  (props: {
+    readonly boxSizePx: number;
+    readonly offsetPx: number;
+    readonly borderThicknessRation: number;
+    readonly startRadiusRation: number;
+    readonly endRadiusRation: number;
+    readonly startLine: ILineData;
+    readonly endLine: ILineData;
+    readonly shouldHighlight: boolean;
+  }) => {
+    const {
+      boxSizePx,
+      offsetPx,
+      borderThicknessRation,
+      startRadiusRation,
+      endRadiusRation,
+      startLine,
+      endLine,
+      shouldHighlight,
+    } = props;
+
+    const style = React.useMemo(
+      () =>
+        ({
+          position: "absolute",
+          fill: shouldHighlight ? "rgba(200, 200, 255, 1)" : "transparent",
+          left: offsetPx,
+          bottom: offsetPx,
           stroke: "rgb(0,0,0)",
-          strokeWidth: props.borderThickness / bigCircleRadius,
-        },
-      ] as const,
-    [bigCircleRadius, props.borderThickness],
-  );
-  return (
-    <svg
-      height={props.bigCircleDiameter}
-      width={props.bigCircleDiameter}
-      viewBox="-1,-1,2,2"
-      transform="scale(1, -1)"
-      style={svgStyle}
-    >
-      <line
-        x1={props.startX}
-        y1={props.startY}
-        x2={props.endX}
-        y2={props.endY}
-        style={lineStyle}
-      />
-    </svg>
-  );
-};
+          strokeWidth: borderThicknessRation,
+          width: boxSizePx,
+          height: boxSizePx,
+          transform: "scale(1, -1)",
+        } as const),
+      [shouldHighlight, offsetPx, borderThicknessRation, boxSizePx],
+    );
 
-const Circle = (props: {
-  readonly boxSize: number;
-  readonly borderThickness: number;
-  readonly radius: number;
-  readonly shouldHighlight: boolean;
-}) => {
-  const [svgStyle, radius] = React.useMemo(() => {
-    const offset = -(props.boxSize / 2);
-    const scaledBorderThickness = (props.borderThickness * 2) / props.boxSize;
-    const radius = props.radius - scaledBorderThickness;
-
-    return [
-      {
-        position: "absolute",
-        fill: "rgba(255, 255, 255, 0)",
-        left: offset,
-        bottom: offset,
-        stroke: "rgb(0,0,0)",
-        strokeWidth: scaledBorderThickness,
-      } as const,
-      radius,
-    ];
-  }, [props.boxSize, props.borderThickness, props.radius]);
-
-  const actualStyle = React.useMemo(
-    () =>
-      props.shouldHighlight
-        ? { ...svgStyle, fill: "rgba(200, 200, 255, 1)" }
-        : svgStyle,
-    [props.shouldHighlight, svgStyle],
-  );
-
-  return (
-    <svg
-      height={props.boxSize + props.borderThickness * 2}
-      width={props.boxSize + props.borderThickness * 2}
-      viewBox="-1,-1,2,2"
-      transform="scale(1, -1)"
-      style={actualStyle}
-    >
-      <circle cx={0} cy={0} r={radius} />
-    </svg>
-  );
-};
-
-interface ILineData {
-  readonly cos: number;
-  readonly sin: number;
-}
-
-const RingSegment = (props: {
-  readonly boxSize: number;
-  readonly borderThickness: number;
-  readonly startRadius: number;
-  readonly endRadius: number;
-  readonly startLine: ILineData;
-  readonly endLine: ILineData;
-  readonly shouldHighlight: boolean;
-}) => {
-  const [svgStyle, data] = React.useMemo(() => {
-    const offset = -(props.boxSize / 2);
-    const scaledBorderThickness = (props.borderThickness * 2) / props.boxSize;
-    const startRadius = props.startRadius - scaledBorderThickness;
-    const endRadius = props.endRadius - scaledBorderThickness;
-    const innerStart = {
-      X: props.startLine.cos * startRadius,
-      Y: props.startLine.sin * startRadius,
-    } as const;
-    const outerStart = {
-      X: props.startLine.cos * endRadius,
-      Y: props.startLine.sin * endRadius,
-    } as const;
-    const outerEnd = {
-      X: props.endLine.cos * endRadius,
-      Y: props.endLine.sin * endRadius,
-    } as const;
-    const innerEnd = {
-      X: props.endLine.cos * startRadius,
-      Y: props.endLine.sin * startRadius,
-    } as const;
-
-    const data =
-      `M ${innerStart.X} ${innerStart.Y}` +
-      `L ${outerStart.X} ${outerStart.Y}` +
-      `A ${props.endRadius} ${props.endRadius} 0 0 1 ${outerEnd.X} ${outerEnd.Y}` +
-      `L ${innerEnd.X} ${innerEnd.Y}` +
-      `A ${props.startRadius} ${props.startRadius} 0 0 0 ${innerStart.X} ${innerStart.Y}` +
-      `Z`;
-
-    return [
-      {
-        position: "absolute",
-        fill: "rgba(255, 255, 255, 0)",
-        left: offset,
-        bottom: offset,
-        stroke: "rgb(0,0,0)",
-        strokeWidth: scaledBorderThickness,
-      } as const,
-      data,
-    ];
-  }, [
-    props.boxSize,
-    props.borderThickness,
-    props.startRadius,
-    props.endRadius,
-    props.startLine,
-    props.endLine,
-  ]);
-
-  const actualStyle = React.useMemo(
-    () =>
-      props.shouldHighlight
-        ? { ...svgStyle, fill: "rgba(200, 200, 255, 1)" }
-        : svgStyle,
-    [props.shouldHighlight, svgStyle],
-  );
-
-  return (
-    <svg
-      height={props.boxSize + props.borderThickness * 2}
-      width={props.boxSize + props.borderThickness * 2}
-      viewBox="-1,-1,2,2"
-      transform="scale(1, -1)"
-      style={actualStyle}
-    >
-      <path d={data} />
-    </svg>
-  );
-};
-
-const range = (first: number, count: number): number[] => {
-  const result = [];
-  for (let i = first; i < first + count; ++i) {
-    result.push(i);
-  }
-  return result;
-};
-
-const RingSegments = (props: {
-  readonly bigCircleDiameter: number;
-  readonly smallCircleDiameter: number;
-  readonly borderThickness: number;
-  readonly segmentWithDot: number | undefined;
-}) => {
-  const outerProps = props;
-
-  const lineData: readonly ILineData[] = React.useMemo(
-    () =>
-      range(0, 12).map(i => {
-        const angle = degToRad(i * 30 + 15);
-        return {
-          cos: Math.cos(angle),
-          sin: Math.sin(angle),
-        } as const;
-      }),
-    [],
-  );
-
-  const startRadius =
-    outerProps.smallCircleDiameter / outerProps.bigCircleDiameter;
-  const RingSegmentMemo = React.useMemo(
-    () => (props: {
-      readonly startLine: ILineData;
-      readonly endLine: ILineData;
-      readonly shouldHightlight: boolean;
-    }) => {
-      return (
-        <RingSegment
-          boxSize={outerProps.bigCircleDiameter}
-          borderThickness={outerProps.borderThickness}
-          startRadius={startRadius}
-          endRadius={1}
-          startLine={props.startLine}
-          endLine={props.endLine}
-          shouldHighlight={props.shouldHightlight}
-        />
-      );
-    },
-    [outerProps.bigCircleDiameter, outerProps.borderThickness, startRadius],
-  );
-
-  return (
-    <>
-      <RingSegmentMemo
-        startLine={lineData[0]}
-        endLine={lineData[1]}
-        shouldHightlight={props.segmentWithDot === 0}
-      />
-      <RingSegmentMemo
-        startLine={lineData[1]}
-        endLine={lineData[2]}
-        shouldHightlight={props.segmentWithDot === 1}
-      />
-      <RingSegmentMemo
-        startLine={lineData[2]}
-        endLine={lineData[3]}
-        shouldHightlight={props.segmentWithDot === 2}
-      />
-      <RingSegmentMemo
-        startLine={lineData[3]}
-        endLine={lineData[4]}
-        shouldHightlight={props.segmentWithDot === 3}
-      />
-      <RingSegmentMemo
-        startLine={lineData[4]}
-        endLine={lineData[5]}
-        shouldHightlight={props.segmentWithDot === 4}
-      />
-      <RingSegmentMemo
-        startLine={lineData[5]}
-        endLine={lineData[6]}
-        shouldHightlight={props.segmentWithDot === 5}
-      />
-      <RingSegmentMemo
-        startLine={lineData[6]}
-        endLine={lineData[7]}
-        shouldHightlight={props.segmentWithDot === 6}
-      />
-      <RingSegmentMemo
-        startLine={lineData[7]}
-        endLine={lineData[8]}
-        shouldHightlight={props.segmentWithDot === 7}
-      />
-      <RingSegmentMemo
-        startLine={lineData[8]}
-        endLine={lineData[9]}
-        shouldHightlight={props.segmentWithDot === 8}
-      />
-      <RingSegmentMemo
-        startLine={lineData[9]}
-        endLine={lineData[10]}
-        shouldHightlight={props.segmentWithDot === 9}
-      />
-      <RingSegmentMemo
-        startLine={lineData[10]}
-        endLine={lineData[11]}
-        shouldHightlight={props.segmentWithDot === 10}
-      />
-      <RingSegmentMemo
-        startLine={lineData[11]}
-        endLine={lineData[0]}
-        shouldHightlight={props.segmentWithDot === 11}
-      />
-    </>
-  );
-};
-
-const Lines = (props: {
-  readonly bigCircleDiameter: number;
-  readonly smallCircleDiameter: number;
-  readonly borderThickness: number;
-}) => {
-  const linesProps = props;
-
-  const lineData = React.useMemo(
-    () =>
-      range(0, 12).map(i => {
-        const angle = degToRad(i * 30 + 15);
-        return {
-          angle,
-          cos: Math.cos(angle),
-          sin: Math.sin(angle),
-        };
-      }),
-    [],
-  );
-
-  const startMultiplier =
-    linesProps.smallCircleDiameter / linesProps.bigCircleDiameter;
-  const LineFromCosSin = React.useMemo(
-    () => (props: {
-      readonly lineData: {
-        readonly angle: number;
-        readonly cos: number;
-        readonly sin: number;
-      };
-    }) => {
-      const { cos, sin } = props.lineData;
+    const data = React.useMemo(() => {
+      const innerStart = {
+        X: startLine.cos * startRadiusRation,
+        Y: startLine.sin * startRadiusRation,
+      } as const;
+      const outerStart = {
+        X: startLine.cos * endRadiusRation,
+        Y: startLine.sin * endRadiusRation,
+      } as const;
+      const outerEnd = {
+        X: endLine.cos * endRadiusRation,
+        Y: endLine.sin * endRadiusRation,
+      } as const;
+      const innerEnd = {
+        X: endLine.cos * startRadiusRation,
+        Y: endLine.sin * startRadiusRation,
+      } as const;
 
       return (
-        <Line
-          bigCircleDiameter={linesProps.bigCircleDiameter}
-          borderThickness={linesProps.borderThickness}
-          startX={startMultiplier * cos}
-          startY={startMultiplier * sin}
-          endX={cos}
-          endY={sin}
-        />
+        `M ${innerStart.X} ${innerStart.Y}` +
+        `L ${outerStart.X} ${outerStart.Y}` +
+        `A ${endRadiusRation} ${endRadiusRation} 0 0 1 ${outerEnd.X} ${outerEnd.Y}` +
+        `L ${innerEnd.X} ${innerEnd.Y}` +
+        `A ${startRadiusRation} ${startRadiusRation} 0 0 0 ${innerStart.X} ${innerStart.Y}` +
+        `Z`
       );
-    },
-    [startMultiplier, linesProps.bigCircleDiameter, linesProps.borderThickness],
-  );
+    }, [startLine, startRadiusRation, endLine, endRadiusRation]);
 
-  return (
-    <>
-      <LineFromCosSin lineData={lineData[0]} />
-      <LineFromCosSin lineData={lineData[1]} />
-      <LineFromCosSin lineData={lineData[2]} />
-      <LineFromCosSin lineData={lineData[3]} />
-      <LineFromCosSin lineData={lineData[4]} />
-      <LineFromCosSin lineData={lineData[5]} />
-      <LineFromCosSin lineData={lineData[6]} />
-      <LineFromCosSin lineData={lineData[7]} />
-      <LineFromCosSin lineData={lineData[8]} />
-      <LineFromCosSin lineData={lineData[9]} />
-      <LineFromCosSin lineData={lineData[10]} />
-      <LineFromCosSin lineData={lineData[11]} />
-    </>
-  );
-};
+    return (
+      <svg viewBox="-1,-1,2,2" style={style}>
+        <path d={data} />
+      </svg>
+    );
+  },
+);
+
+const RingSegments = React.memo(
+  (props: {
+    readonly boxSizePx: number;
+    readonly offsetPx: number;
+    readonly borderThicknessRation: number;
+    readonly startRadiusRation: number;
+    readonly endRadiusRation: number;
+    readonly numSegments: number;
+    readonly segmentAngle: number;
+    readonly segmentOffset: number;
+    readonly highlightedSegment: number | undefined;
+  }) => {
+    const {
+      boxSizePx,
+      offsetPx,
+      borderThicknessRation,
+      startRadiusRation,
+      endRadiusRation,
+      numSegments,
+      segmentAngle,
+      segmentOffset,
+      highlightedSegment,
+    } = props;
+
+    const lineData: readonly ILineData[] = React.useMemo(
+      () =>
+        range(0, numSegments).map(i => {
+          const angle = degToRad(i * segmentAngle + segmentOffset);
+          return {
+            cos: Math.cos(angle),
+            sin: Math.sin(angle),
+          } as const;
+        }),
+      [numSegments, segmentAngle, segmentOffset],
+    );
+
+    const RingSegmentMemo = React.useCallback(
+      (props: {
+        readonly startLine: ILineData;
+        readonly endLine: ILineData;
+        readonly shouldHightlight: boolean;
+      }) => {
+        return (
+          <RingSegment
+            boxSizePx={boxSizePx}
+            offsetPx={offsetPx}
+            borderThicknessRation={borderThicknessRation}
+            startRadiusRation={startRadiusRation}
+            endRadiusRation={endRadiusRation}
+            startLine={props.startLine}
+            endLine={props.endLine}
+            shouldHighlight={props.shouldHightlight}
+          />
+        );
+      },
+      [
+        boxSizePx,
+        offsetPx,
+        borderThicknessRation,
+        startRadiusRation,
+        endRadiusRation,
+      ],
+    );
+
+    return (
+      <>
+        {range(0, 12).map(i => (
+          <RingSegmentMemo
+            startLine={lineData[i]}
+            endLine={lineData[(i + 1) % 12]}
+            shouldHightlight={highlightedSegment === i}
+          />
+        ))}
+      </>
+    );
+  },
+);
+
+export const LetterCircle = React.memo(
+  (props: {
+    readonly letters: string[];
+    readonly angle: number;
+    readonly radiusPx: number;
+    readonly fontSize: number;
+  }) => {
+    const circleLetter = React.useCallback(
+      (letter: string, angle: number) => {
+        const style = emo.circleLetter(angle, props.radiusPx, props.fontSize);
+        return <div className={style}>{letter}</div>;
+      },
+      [props.radiusPx, props.fontSize],
+    );
+    return (
+      <>
+        {props.letters.map((i, index) => circleLetter(i, index * props.angle))}
+      </>
+    );
+  },
+);
 
 export const GamepadDot = (props: {
-  readonly bigCircleRadius: number;
-  readonly x: number | undefined;
-  readonly y: number | undefined;
+  readonly boxSizePx: number;
+  readonly offsetPx: number;
+  readonly radiusRation: number;
+  readonly x: number;
+  readonly y: number;
 }) => {
-  const actualX = (props.x === undefined ? 0 : props.x) * props.bigCircleRadius;
-  const actualY = (props.y === undefined ? 0 : props.y) * props.bigCircleRadius;
-
-  const size = "5px";
+  const style = React.useMemo(
+    () =>
+      ({
+        position: "absolute",
+        fill: "black",
+        left: props.offsetPx,
+        bottom: props.offsetPx,
+        strokeWidth: 0,
+        width: props.boxSizePx,
+        height: props.boxSizePx,
+        transform: "scale(1, -1)",
+      } as const),
+    [props.offsetPx, props.boxSizePx],
+  );
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        borderRadius: "50%",
-        width: size,
-        height: size,
-        background: "black",
-        left: `${actualX}px`,
-        bottom: `${actualY}px`,
-      }}
-    />
+    <svg viewBox="-1,-1,2,2" style={style}>
+      <circle cx={props.x} cy={props.y} r={props.radiusRation} />
+    </svg>
+  );
+};
+
+export const RadTypeVis = (props: {
+  // # Style
+  readonly boxSizePx: number;
+  readonly lineThicknessPx: number;
+  readonly fontSize: number;
+  // ## Keys
+  readonly centerKey?: string;
+  readonly innerKeys: string[];
+  readonly outerKeys: string[];
+  // ## Circles
+  readonly gamepadDotRadiusRation: number;
+  readonly innerRadiusRation: number;
+  readonly midRadiusRation: number;
+  // # Behavior
+  readonly gamepadId: number | undefined;
+  readonly xAxisId: number;
+  readonly yAxisId: number;
+}) => {
+  const {
+    boxSizePx,
+    lineThicknessPx,
+    fontSize,
+    centerKey,
+    innerKeys,
+    outerKeys,
+    gamepadDotRadiusRation,
+    // innerRadiusRation,
+    midRadiusRation,
+    gamepadId,
+    xAxisId,
+    yAxisId,
+  } = props;
+  const midRadiusRationSq = midRadiusRation * midRadiusRation;
+  const outerSegmentAngle = 360 / outerKeys.length;
+  const outerSegmentOffset = outerSegmentAngle / 2;
+
+  const halfLineThicknessPx = lineThicknessPx / 2;
+  const actualBoxSizePx = boxSizePx + lineThicknessPx;
+  const offsetPx = -(actualBoxSizePx / 2);
+  const actualBorderThicknessRation = lineThicknessPx / actualBoxSizePx;
+  const actualGamepadDotRadiusRation =
+    (gamepadDotRadiusRation * boxSizePx) / actualBoxSizePx;
+  const actualMidRadiusRation =
+    (midRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
+  const actualOuterRadiusRation =
+    (boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
+  const outerLetterRadiusPx =
+    (midRadiusRation + (1 - midRadiusRation) / 2) * (actualBoxSizePx / 2);
+
+  const [x, setX] = React.useState<number | undefined>();
+  const [y, setY] = React.useState<number | undefined>();
+  const animationFrameRef = React.useRef<number | undefined>();
+
+  React.useEffect(() => {
+    if (gamepadId === undefined) return;
+
+    const updateGamepad = () => {
+      const gamepad = navigator.getGamepads()[gamepadId];
+      if (gamepad === null) return;
+
+      const xAxis = gamepad.axes[xAxisId];
+      const yAxis = -gamepad.axes[yAxisId];
+
+      if (xAxis !== x) setX(xAxis);
+      if (yAxis !== y) setY(yAxis);
+
+      animationFrameRef.current = requestAnimationFrame(updateGamepad);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateGamepad);
+
+    return () => {
+      if (animationFrameRef.current !== undefined) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gamepadId, xAxisId, yAxisId, x, y]);
+
+  let angle =
+    x === undefined || y === undefined ? 0 : radToDeg(Math.atan2(y, x));
+  angle = angle < 0 ? angle + 360 : angle;
+
+  const xOrZero = x === undefined ? 0 : x;
+  const yOrZero = y === undefined ? 0 : y;
+  const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
+
+  let outerDotIndex = undefined;
+  if (midRadiusRationSq <= magnitudeSq) {
+    outerDotIndex = 0;
+    let currentAngle = outerSegmentOffset;
+
+    while (
+      currentAngle < 360 - outerSegmentOffset &&
+      !(currentAngle <= angle && angle < currentAngle + outerSegmentAngle)
+    ) {
+      currentAngle += outerSegmentAngle;
+      ++outerDotIndex;
+    }
+  }
+
+  const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
+  const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
+
+  return (
+    <div className={emo.relative()}>
+      <Circle
+        boxSizePx={actualBoxSizePx}
+        offsetPx={offsetPx}
+        borderThicknessRation={actualBorderThicknessRation}
+        radiusRation={actualMidRadiusRation}
+        shouldHighlight={outerDotIndex === undefined}
+      />
+      <RingSegments
+        boxSizePx={actualBoxSizePx}
+        offsetPx={offsetPx}
+        borderThicknessRation={actualBorderThicknessRation}
+        startRadiusRation={actualMidRadiusRation}
+        endRadiusRation={actualOuterRadiusRation}
+        numSegments={outerKeys.length}
+        segmentAngle={outerSegmentAngle}
+        segmentOffset={outerSegmentOffset}
+        highlightedSegment={outerDotIndex}
+      />
+      <LetterCircle
+        letters={outerKeys}
+        angle={outerSegmentAngle}
+        radiusPx={outerLetterRadiusPx}
+        fontSize={fontSize}
+      />
+      <div className={emo.letter(fontSize)}>{centerKey}</div>
+      <GamepadDot
+        boxSizePx={actualBoxSizePx}
+        offsetPx={offsetPx}
+        radiusRation={actualGamepadDotRadiusRation}
+        x={actualX}
+        y={actualY}
+      />
+    </div>
   );
 };
 
 export const Home = () => {
-  const circleBorderSize = 5;
-  const bigCircleDiameter = 500;
-  const bigCircleRadius = bigCircleDiameter / 2;
-  const smallCircleDiameter = 300;
-  const smallCircleRadius = smallCircleDiameter / 2;
-  const letterOffset = bigCircleRadius - circleBorderSize;
-  const letterCircleRadius = (bigCircleRadius + smallCircleRadius) / 2;
-  const lineHeight = 10;
+  const lineThicknessPx = 5;
   const fontSize = 42;
-  const fontSizeDivisor = 6;
-  const circleLetter = (angle: number) =>
-    emo.circleLetter(
-      angle,
-      letterCircleRadius,
-      lineHeight,
-      fontSize,
-      fontSizeDivisor,
-    );
+  const bigCircleDiameterPx = 500;
+  const smallCircleDiameterPx = 300;
+  const smallCircleRadiusRation = smallCircleDiameterPx / bigCircleDiameterPx;
+  const gamepadDotDiameterPx = 5;
+  const gamepadDotRadiusRation = gamepadDotDiameterPx / bigCircleDiameterPx;
 
   const [gamepadId, setGamepadId] = React.useState<number | undefined>();
-
-  const [leftX, setLeftX] = React.useState<number | undefined>();
-  const [leftY, setLeftY] = React.useState<number | undefined>();
-  const [rightX, setRightX] = React.useState<number | undefined>();
-  const [rightY, setRightY] = React.useState<number | undefined>();
 
   React.useEffect(() => {
     const eventListener = (e: Event) => {
@@ -481,149 +465,46 @@ export const Home = () => {
     return () => window.removeEventListener("gamepadconnected", eventListener);
   });
 
-  const requestRef = React.useRef<number | undefined>();
-
   React.useEffect(() => {
-    if (gamepadId === undefined) return;
-
-    const updateGamepad = () => {
-      const gamepad = navigator.getGamepads()[gamepadId];
-      if (gamepad === null) return;
-      if (gamepad.axes[0] !== leftX) setLeftX(gamepad.axes[0]);
-      if (-gamepad.axes[1] !== leftY) setLeftY(-gamepad.axes[1]);
-      if (gamepad.axes[2] !== rightX) setRightX(gamepad.axes[2]);
-      if (-gamepad.axes[3] !== rightY) setRightY(-gamepad.axes[3]);
-
-      requestRef.current = requestAnimationFrame(updateGamepad);
+    const eventListener = (e: Event) => {
+      const eTyped = e as GamepadEvent;
+      setGamepadId(undefined);
     };
-
-    requestRef.current = requestAnimationFrame(updateGamepad);
-
-    return () => {
-      if (requestRef.current !== undefined) {
-        cancelAnimationFrame(requestRef.current);
-      }
-    };
-  }, [leftX, leftY, rightX, rightY, gamepadId]);
-
-  const circleRadius = smallCircleDiameter / bigCircleDiameter;
-  const circleRadiusSq = circleRadius * circleRadius;
-
-  let leftAngle =
-    leftY === undefined || leftX === undefined
-      ? 0
-      : radToDeg(Math.atan2(leftY, leftX));
-  leftAngle = leftAngle < 0 ? 360 + leftAngle : leftAngle;
-  const leftXOrZero = leftX === undefined ? 0 : leftX;
-  const leftYOrZero = leftY === undefined ? 0 : leftY;
-  const leftMagnitudeSq = leftYOrZero * leftYOrZero + leftXOrZero * leftXOrZero;
-
-  let leftSegmentWithDot = undefined;
-  if (leftMagnitudeSq > circleRadiusSq) {
-    leftSegmentWithDot = 11;
-    for (let i = 375; i > 0; i -= 30) {
-      if (leftAngle <= i && leftAngle > i - 30) {
-        break;
-      }
-      --leftSegmentWithDot;
-    }
-    leftSegmentWithDot = leftSegmentWithDot < 0 ? 11 : leftSegmentWithDot;
-  }
-
-  let rightAngle =
-    rightY === undefined || rightX === undefined
-      ? 0
-      : radToDeg(Math.atan2(rightY, rightX));
-  rightAngle = rightAngle < 0 ? 360 + rightAngle : rightAngle;
-  const rightXOrZero = rightX === undefined ? 0 : rightX;
-  const rightYOrZero = rightY === undefined ? 0 : rightY;
-  const rightMagnitudeSq =
-    rightYOrZero * rightYOrZero + rightXOrZero * rightXOrZero;
-
-  let rightSegmentWithDot = undefined;
-  if (rightMagnitudeSq > circleRadiusSq) {
-    rightSegmentWithDot = 11;
-    for (let i = 375; i > 0; i -= 30) {
-      if (rightAngle <= i && rightAngle > i - 30) {
-        break;
-      }
-      --rightSegmentWithDot;
-    }
-    rightSegmentWithDot = rightSegmentWithDot < 0 ? 11 : rightSegmentWithDot;
-  }
+    window.addEventListener("gamepaddisconnected", eventListener);
+    return () =>
+      window.removeEventListener("gamepaddisconnected", eventListener);
+  });
 
   return (
     <div className={emo.horizontal()}>
-      <div className={emo.circle(bigCircleDiameter)}>
-        <div className={emo.circle(smallCircleDiameter)} />
-        <div className={emo.letters(letterOffset)}>
-          <Circle
-            boxSize={bigCircleDiameter}
-            radius={circleRadius}
-            borderThickness={circleBorderSize}
-            shouldHighlight={leftSegmentWithDot === undefined}
-          />
-          <RingSegments
-            bigCircleDiameter={bigCircleDiameter}
-            smallCircleDiameter={smallCircleDiameter}
-            borderThickness={circleBorderSize}
-            segmentWithDot={leftSegmentWithDot}
-          />
-          <GamepadDot x={leftX} y={leftY} bigCircleRadius={bigCircleRadius} />
-          <div className={circleLetter(90)}>R</div>
-          <div className={circleLetter(60)}>G</div>
-          <div className={circleLetter(30)}>V</div>
-          <div className={circleLetter(0)}>F</div>
-          <div className={circleLetter(330)}>D</div>
-          <div className={circleLetter(300)}>C</div>
-          <div className={circleLetter(270)}>X</div>
-          <div className={circleLetter(240)}>Z</div>
-          <div className={circleLetter(210)}>S</div>
-          <div className={circleLetter(180)}>A</div>
-          <div className={circleLetter(150)}>Q</div>
-          <div className={circleLetter(120)}>W</div>
-          <div
-            className={emo.centerLetter(lineHeight, fontSize, fontSizeDivisor)}
-          >
-            E
-          </div>
-        </div>
-      </div>
-      <div className={emo.circle(bigCircleDiameter)}>
-        <div className={emo.circle(smallCircleDiameter)} />
-        <div className={emo.letters(letterOffset)}>
-          <RingSegments
-            bigCircleDiameter={bigCircleDiameter}
-            smallCircleDiameter={smallCircleDiameter}
-            borderThickness={circleBorderSize}
-            segmentWithDot={rightSegmentWithDot}
-          />
-          <Circle
-            boxSize={bigCircleDiameter}
-            radius={circleRadius}
-            borderThickness={circleBorderSize}
-            shouldHighlight={rightSegmentWithDot === undefined}
-          />
-          <GamepadDot x={rightX} y={rightY} bigCircleRadius={bigCircleRadius} />
-          <div className={circleLetter(90)}>I</div>
-          <div className={circleLetter(60)}>O</div>
-          <div className={circleLetter(30)}>P</div>
-          <div className={circleLetter(0)}>L</div>
-          <div className={circleLetter(330)}>K</div>
-          <div className={circleLetter(300)}>M</div>
-          <div className={circleLetter(270)}>N</div>
-          <div className={circleLetter(240)}>B</div>
-          <div className={circleLetter(210)}>H</div>
-          <div className={circleLetter(180)}>J</div>
-          <div className={circleLetter(150)}>Y</div>
-          <div className={circleLetter(120)}>U</div>
-          <div
-            className={emo.centerLetter(lineHeight, fontSize, fontSizeDivisor)}
-          >
-            T
-          </div>
-        </div>
-      </div>
+      <RadTypeVis
+        boxSizePx={bigCircleDiameterPx}
+        lineThicknessPx={lineThicknessPx}
+        fontSize={fontSize}
+        centerKey={"E"}
+        innerKeys={[]}
+        outerKeys={["F", "V", "G", "R", "W", "Q", "A", "S", "Z", "X", "C", "D"]}
+        gamepadDotRadiusRation={gamepadDotRadiusRation}
+        innerRadiusRation={0}
+        midRadiusRation={smallCircleRadiusRation}
+        gamepadId={gamepadId}
+        xAxisId={0}
+        yAxisId={1}
+      />
+      <RadTypeVis
+        boxSizePx={bigCircleDiameterPx}
+        lineThicknessPx={lineThicknessPx}
+        fontSize={fontSize}
+        centerKey={"T"}
+        innerKeys={[]}
+        outerKeys={["L", "P", "O", "I", "U", "Y", "J", "H", "B", "N", "M", "K"]}
+        gamepadDotRadiusRation={gamepadDotRadiusRation}
+        innerRadiusRation={0}
+        midRadiusRation={smallCircleRadiusRation}
+        gamepadId={gamepadId}
+        xAxisId={2}
+        yAxisId={3}
+      />
     </div>
   );
 };
