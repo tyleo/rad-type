@@ -261,6 +261,7 @@ const RingSegments = React.memo(
       <>
         {range(0, numSegments).map(i => (
           <RingSegmentMemo
+            key={i}
             startLine={lineData[i]}
             endLine={lineData[(i + 1) % numSegments]}
             shouldHightlight={highlightedSegment === i}
@@ -281,7 +282,11 @@ export const LetterCircle = React.memo(
     const circleLetter = React.useCallback(
       (letter: string, angle: number) => {
         const style = emo.circleLetter(angle, props.radiusPx, props.fontSize);
-        return <div className={style}>{letter}</div>;
+        return (
+          <div key={letter} className={style}>
+            {letter}
+          </div>
+        );
       },
       [props.radiusPx, props.fontSize],
     );
@@ -319,6 +324,68 @@ export const GamepadDot = (props: {
     <svg viewBox="-1,-1,2,2" style={style}>
       <circle cx={props.x} cy={props.y} r={props.radiusRation} />
     </svg>
+  );
+};
+
+export const LetterRing = (props: {
+  readonly boxSizePx: number;
+  readonly lineThicknessPx: number;
+  readonly fontSize: number;
+  readonly keys: string[];
+  readonly innerRadiusRation: number;
+  readonly outerRadiusRation: number;
+  readonly angleOffsetMultiplier: number;
+  readonly highlightedSegmentIndex: number | undefined;
+}) => {
+  const {
+    boxSizePx,
+    lineThicknessPx,
+    fontSize,
+    keys,
+    innerRadiusRation,
+    outerRadiusRation,
+    angleOffsetMultiplier,
+    highlightedSegmentIndex,
+  } = props;
+
+  const segmentAngle = 360 / keys.length;
+  const segmentOffset = segmentAngle * angleOffsetMultiplier;
+
+  const halfLineThicknessPx = lineThicknessPx / 2;
+  const actualBoxSizePx = boxSizePx + lineThicknessPx;
+  const halfBoxSizePx = actualBoxSizePx / 2;
+  const offsetPx = -halfBoxSizePx;
+
+  const actualBorderThicknessRation = lineThicknessPx / actualBoxSizePx;
+
+  const actualInnerRadiusRation =
+    (innerRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
+  const actualOuterRadiusRation =
+    (outerRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
+
+  const letterRadiusPx =
+    ((actualInnerRadiusRation + actualOuterRadiusRation) / 2) * halfBoxSizePx;
+
+  return (
+    <>
+      <RingSegments
+        boxSizePx={actualBoxSizePx}
+        offsetPx={offsetPx}
+        borderThicknessRation={actualBorderThicknessRation}
+        startRadiusRation={actualInnerRadiusRation}
+        endRadiusRation={actualOuterRadiusRation}
+        numSegments={keys.length}
+        segmentAngle={segmentAngle}
+        segmentOffset={segmentOffset}
+        highlightedSegment={highlightedSegmentIndex}
+      />
+      <LetterCircle
+        letters={keys}
+        angle={segmentAngle}
+        radiusPx={letterRadiusPx}
+        fontSize={fontSize}
+      />
+    </>
   );
 };
 
@@ -375,16 +442,6 @@ export const RadTypeVis = (props: {
 
   const actualInnerRadiusRation =
     (innerRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
-  const actualMidRadiusRation =
-    (midRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
-  const actualOuterRadiusRation =
-    (boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
-
-  const innerLetterRadiusPx =
-    (actualInnerRadiusRation + (midRadiusRation - innerRadiusRation) / 2) *
-    (actualBoxSizePx / 2);
-  const outerLetterRadiusPx =
-    (midRadiusRation + (1 - midRadiusRation) / 2) * (actualBoxSizePx / 2);
 
   const [x, setX] = React.useState<number | undefined>();
   const [y, setY] = React.useState<number | undefined>();
@@ -451,44 +508,6 @@ export const RadTypeVis = (props: {
     }
   }
 
-  const InnerRing = React.memo(
-    React.useCallback(
-      (props: { readonly dotIndex: number | undefined }) => (
-        <>
-          <RingSegments
-            boxSizePx={actualBoxSizePx}
-            offsetPx={offsetPx}
-            borderThicknessRation={actualBorderThicknessRation}
-            startRadiusRation={actualInnerRadiusRation}
-            endRadiusRation={actualMidRadiusRation}
-            numSegments={innerKeys.length}
-            segmentAngle={innerSegmentAngle}
-            segmentOffset={innerSegmentOffset}
-            highlightedSegment={props.dotIndex}
-          />
-          <LetterCircle
-            letters={innerKeys}
-            angle={innerSegmentAngle}
-            radiusPx={innerLetterRadiusPx}
-            fontSize={fontSize}
-          />
-        </>
-      ),
-      [
-        actualBoxSizePx,
-        offsetPx,
-        actualBorderThicknessRation,
-        actualInnerRadiusRation,
-        actualMidRadiusRation,
-        innerKeys,
-        innerSegmentAngle,
-        innerSegmentOffset,
-        innerLetterRadiusPx,
-        fontSize,
-      ],
-    ),
-  );
-
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
@@ -502,25 +521,27 @@ export const RadTypeVis = (props: {
           radiusRation={actualInnerRadiusRation}
           shouldHighlight={outerDotIndex === undefined}
         />
-        <RingSegments
-          boxSizePx={actualBoxSizePx}
-          offsetPx={offsetPx}
-          borderThicknessRation={actualBorderThicknessRation}
-          startRadiusRation={actualMidRadiusRation}
-          endRadiusRation={actualOuterRadiusRation}
-          numSegments={outerKeys.length}
-          segmentAngle={outerSegmentAngle}
-          segmentOffset={outerSegmentOffset}
-          highlightedSegment={outerDotIndex}
-        />
-        <LetterCircle
-          letters={outerKeys}
-          angle={outerSegmentAngle}
-          radiusPx={outerLetterRadiusPx}
+        <LetterRing
+          boxSizePx={boxSizePx}
+          lineThicknessPx={lineThicknessPx}
           fontSize={fontSize}
+          keys={outerKeys}
+          innerRadiusRation={midRadiusRation}
+          outerRadiusRation={1}
+          angleOffsetMultiplier={outerRingOffsetMultiplier}
+          highlightedSegmentIndex={outerDotIndex}
+        />
+        <LetterRing
+          boxSizePx={boxSizePx}
+          lineThicknessPx={lineThicknessPx}
+          fontSize={fontSize}
+          keys={innerKeys}
+          innerRadiusRation={innerRadiusRation}
+          outerRadiusRation={midRadiusRation}
+          angleOffsetMultiplier={innerRingOffsetMultiplier}
+          highlightedSegmentIndex={innerDotIndex}
         />
         <div className={emo.letter(fontSize)}>{centerKey}</div>
-        <InnerRing dotIndex={innerDotIndex} />
         <GamepadDot
           boxSizePx={actualBoxSizePx}
           offsetPx={offsetPx}
