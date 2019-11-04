@@ -276,6 +276,7 @@ export const LetterCircle = React.memo(
   (props: {
     readonly letters: string[];
     readonly angle: number;
+    readonly offset: number;
     readonly radiusPx: number;
     readonly fontSize: number;
   }) => {
@@ -292,7 +293,9 @@ export const LetterCircle = React.memo(
     );
     return (
       <>
-        {props.letters.map((i, index) => circleLetter(i, index * props.angle))}
+        {props.letters.map((i, index) =>
+          circleLetter(i, index * props.angle + props.offset),
+        )}
       </>
     );
   },
@@ -382,6 +385,7 @@ export const SegmentedLetterCircle = (props: {
       <LetterCircle
         letters={keys}
         angle={segmentAngle}
+        offset={0}
         radiusPx={letterRadiusPx}
         fontSize={fontSize}
       />
@@ -550,7 +554,7 @@ export const RadTypeVis2 = (props: {
     gamepadDotRadiusRation,
     innerRadiusRation,
     outerRadiusRation,
-    // innerRingOffsetMultiplier,
+    innerRingOffsetMultiplier,
     outerRingOffsetMultiplier,
     gamepadId,
     xAxisId,
@@ -560,9 +564,8 @@ export const RadTypeVis2 = (props: {
   const outerSegmentAngle = 360 / outerKeys.length;
   const outerSegmentOffset = outerSegmentAngle * outerRingOffsetMultiplier;
 
-  // const innerRadiusRationSq = innerRadiusRation * innerRadiusRation;
   const innerSegmentAngle = 360 / innerKeys.length;
-  // const innerSegmentOffset = innerSegmentAngle * innerRingOffsetMultiplier;
+  const innerSegmentOffset = innerSegmentAngle * innerRingOffsetMultiplier;
 
   const halfLineThicknessPx = lineThicknessPx / 2;
   const actualBoxSizePx = boxSizePx + lineThicknessPx;
@@ -628,20 +631,6 @@ export const RadTypeVis2 = (props: {
     }
   }
 
-  // let innerDotIndex: number | undefined = undefined;
-  // if (innerRadiusRationSq !== undefined && innerRadiusRationSq <= magnitudeSq) {
-  //   innerDotIndex = 0;
-  //   let currentAngle = innerSegmentOffset;
-
-  //   while (
-  //     currentAngle < 360 - innerSegmentOffset &&
-  //     !(currentAngle <= angle && angle < currentAngle + innerSegmentAngle)
-  //   ) {
-  //     currentAngle += innerSegmentAngle;
-  //     ++innerDotIndex;
-  //   }
-  // }
-
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
@@ -658,6 +647,7 @@ export const RadTypeVis2 = (props: {
         <LetterCircle
           letters={outerKeys}
           angle={outerSegmentAngle}
+          offset={innerSegmentOffset}
           radiusPx={letterRadiusPx}
           fontSize={fontSize}
         />
@@ -698,6 +688,7 @@ export const Home = () => {
   const midCircleRadiusRation = midCircleDiameterPx / bigCircleDiameterPx;
 
   const ringOffsetMultiplier = 1 / 2;
+  const letterOffsetMultiplier = 1 / 2;
 
   const gamepadDotDiameterPx = 5;
   const gamepadDotRadiusRation = gamepadDotDiameterPx / bigCircleDiameterPx;
@@ -763,11 +754,11 @@ export const Home = () => {
           fontSize={fontSize}
           centerKey={"E"}
           outerKeys={["V", "Q", "Z", "X"]}
-          innerKeys={["F", "R", "W", "G", "A", "S", "D", "C"]}
+          innerKeys={["F", "G", "R", "W", "A", "S", "D", "C"]}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           innerRadiusRation={smallCircleRadiusRation}
           outerRadiusRation={midCircleRadiusRation}
-          innerRingOffsetMultiplier={ringOffsetMultiplier}
+          innerRingOffsetMultiplier={letterOffsetMultiplier}
           outerRingOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={0}
@@ -783,7 +774,7 @@ export const Home = () => {
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           innerRadiusRation={smallCircleRadiusRation}
           outerRadiusRation={midCircleRadiusRation}
-          innerRingOffsetMultiplier={ringOffsetMultiplier}
+          innerRingOffsetMultiplier={-letterOffsetMultiplier}
           outerRingOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={2}
