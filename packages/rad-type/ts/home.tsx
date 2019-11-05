@@ -71,6 +71,36 @@ const useJoystick = (
   return [x, y];
 };
 
+const useButton = (gamepadId: number | undefined, buttonId: number) => {
+  const [state, setState] = React.useState<boolean | undefined>();
+  const animationFrameRef = React.useRef<number | undefined>();
+
+  React.useEffect(() => {
+    if (gamepadId === undefined) return;
+
+    const updateGamepad = () => {
+      const gamepad = navigator.getGamepads()[gamepadId];
+      if (gamepad === null) return;
+
+      const button = gamepad.buttons[buttonId];
+
+      if (button.pressed !== state) setState(button.pressed);
+
+      animationFrameRef.current = requestAnimationFrame(updateGamepad);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateGamepad);
+
+    return () => {
+      if (animationFrameRef.current !== undefined) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gamepadId, buttonId, state]);
+
+  return state;
+};
+
 const emo = {
   radTypeContainerRelativeContainer: (sizePx: number) => Emotion.css`
     height: ${sizePx}px;
@@ -609,6 +639,7 @@ export const RadTypeVis2 = (props: {
   readonly gamepadId: number | undefined;
   readonly xAxisId: number;
   readonly yAxisId: number;
+  readonly altButtonId: number;
 }) => {
   const {
     boxSizePx,
@@ -625,6 +656,7 @@ export const RadTypeVis2 = (props: {
     gamepadId,
     xAxisId,
     yAxisId,
+    altButtonId,
   } = props;
   const outerRadiusRationSq = outerRadiusRation * outerRadiusRation;
   const outerSegmentAngle = 360 / outerKeys.length;
@@ -651,6 +683,14 @@ export const RadTypeVis2 = (props: {
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
+  const altButton = useButton(gamepadId, altButtonId);
+
+  const blackColor = "rgb(0, 0, 0)";
+  const greyColor = "rgb(179, 179, 179)";
+  const { innerColor, outerColor } = altButton
+    ? { innerColor: blackColor, outerColor: greyColor }
+    : { innerColor: greyColor, outerColor: blackColor };
+
   const outerDotIndex =
     magnitudeSq > outerRadiusRationSq
       ? calcAngleIndex(xOrZero, yOrZero, outerSegmentAngle, outerSegmentOffset)
@@ -675,7 +715,7 @@ export const RadTypeVis2 = (props: {
           offset={innerSegmentOffset}
           radiusPx={letterRadiusPx}
           fontSize={fontSize}
-          color={"rgb(179, 179, 179)"}
+          color={innerColor}
         />
         <SegmentedLetterCircle
           boxSizePx={boxSizePx}
@@ -686,11 +726,9 @@ export const RadTypeVis2 = (props: {
           outerRadiusRation={1}
           angleOffsetMultiplier={outerRingOffsetMultiplier}
           highlightedSegmentIndex={outerDotIndex}
-          letterColor={"rgb(0, 0, 0)"}
+          letterColor={outerColor}
         />
-        <div className={emo.letter(fontSize, "rgb(179, 179, 179)")}>
-          {centerKey}
-        </div>
+        <div className={emo.letter(fontSize, innerColor)}>{centerKey}</div>
         <GamepadDot
           boxSizePx={actualBoxSizePx}
           offsetPx={offsetPx}
@@ -792,6 +830,7 @@ export const Home = () => {
           gamepadId={gamepadId}
           xAxisId={0}
           yAxisId={1}
+          altButtonId={4}
         />
         <RadTypeVis2
           boxSizePx={bigCircleDiameterPx}
@@ -808,6 +847,7 @@ export const Home = () => {
           gamepadId={gamepadId}
           xAxisId={2}
           yAxisId={3}
+          altButtonId={5}
         />
       </div>
     </div>
