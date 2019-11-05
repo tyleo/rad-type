@@ -7,7 +7,22 @@ interface ILineData {
   readonly sin: number;
 }
 
+const atan2 = (x: number, y: number) => {
+  const angle = Math.atan2(y, x);
+  return angle < 0 ? angle + 2 * Math.PI : angle;
+};
+
+const calcAngleIndex = (
+  x: number,
+  y: number,
+  angleIncrement: number,
+  angleOffset: number,
+) =>
+  Math.floor(negToPosDeg(radToDeg(atan2(x, y)) - angleOffset) / angleIncrement);
+
 const degToRad = (deg: number) => (deg * Math.PI) / 180;
+
+const negToPosDeg = (deg: number) => (deg < 0 ? deg + 360 : deg);
 
 const radToDeg = (rad: number) => (rad * 180) / Math.PI;
 
@@ -17,6 +32,43 @@ const range = (first: number, count: number): number[] => {
     result.push(i);
   }
   return result;
+};
+
+const useJoystick = (
+  gamepadId: number | undefined,
+  xAxisId: number,
+  yAxisId: number,
+) => {
+  const [x, setX] = React.useState<number | undefined>();
+  const [y, setY] = React.useState<number | undefined>();
+  const animationFrameRef = React.useRef<number | undefined>();
+
+  React.useEffect(() => {
+    if (gamepadId === undefined) return;
+
+    const updateGamepad = () => {
+      const gamepad = navigator.getGamepads()[gamepadId];
+      if (gamepad === null) return;
+
+      const xAxis = gamepad.axes[xAxisId];
+      const yAxis = -gamepad.axes[yAxisId];
+
+      if (xAxis !== x) setX(xAxis);
+      if (yAxis !== y) setY(yAxis);
+
+      animationFrameRef.current = requestAnimationFrame(updateGamepad);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateGamepad);
+
+    return () => {
+      if (animationFrameRef.current !== undefined) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gamepadId, xAxisId, yAxisId, x, y]);
+
+  return [x, y];
 };
 
 const emo = {
@@ -52,9 +104,10 @@ const emo = {
     height: ${heightPx}px;
   `,
 
-  letter: (fontSize: number) => Emotion.css`
-    position: absolute;
+  letter: (fontSize: number, color: string) => Emotion.css`
+    color: ${color};
     display: flex;
+    position: absolute;
     line-height: 0px;
     justify-content: center;
     font-family: "Arial Rounded MT Bold";
@@ -62,10 +115,15 @@ const emo = {
     width: 0px;
   `,
 
-  circleLetter: (angleDeg: number, radius: number, fontSize: number) => {
+  circleLetter: (
+    angleDeg: number,
+    radius: number,
+    fontSize: number,
+    color: string,
+  ) => {
     const angleRad = degToRad(angleDeg);
     return Emotion.css`
-      ${emo.letter(fontSize)};
+      ${emo.letter(fontSize, color)};
       left: ${radius * Math.cos(angleRad)}px;
       bottom: ${radius * Math.sin(angleRad)}px;
     `;
@@ -279,10 +337,16 @@ export const LetterCircle = React.memo(
     readonly offset: number;
     readonly radiusPx: number;
     readonly fontSize: number;
+    readonly color: string;
   }) => {
     const circleLetter = React.useCallback(
-      (letter: string, angle: number) => {
-        const style = emo.circleLetter(angle, props.radiusPx, props.fontSize);
+      (letter: string, angle: number, color: string) => {
+        const style = emo.circleLetter(
+          angle,
+          props.radiusPx,
+          props.fontSize,
+          color,
+        );
         return (
           <div key={letter} className={style}>
             {letter}
@@ -294,7 +358,7 @@ export const LetterCircle = React.memo(
     return (
       <>
         {props.letters.map((i, index) =>
-          circleLetter(i, index * props.angle + props.offset),
+          circleLetter(i, index * props.angle + props.offset, props.color),
         )}
       </>
     );
@@ -339,6 +403,7 @@ export const SegmentedLetterCircle = (props: {
   readonly outerRadiusRation: number;
   readonly angleOffsetMultiplier: number;
   readonly highlightedSegmentIndex: number | undefined;
+  readonly letterColor: string;
 }) => {
   const {
     boxSizePx,
@@ -349,6 +414,7 @@ export const SegmentedLetterCircle = (props: {
     outerRadiusRation,
     angleOffsetMultiplier,
     highlightedSegmentIndex,
+    letterColor,
   } = props;
 
   const segmentAngle = 360 / keys.length;
@@ -388,6 +454,7 @@ export const SegmentedLetterCircle = (props: {
         offset={0}
         radiusPx={letterRadiusPx}
         fontSize={fontSize}
+        color={letterColor}
       />
     </>
   );
@@ -403,7 +470,7 @@ export const RadTypeVis = (props: {
   readonly keys: string[];
   // ## Circles
   readonly gamepadDotRadiusRation: number;
-  readonly innerRadiusRation: number;
+  readonly radiusRation: number;
   readonly angleOffsetMultiplier: number;
   // # Behavior
   readonly gamepadId: number | undefined;
@@ -417,13 +484,13 @@ export const RadTypeVis = (props: {
     centerKey,
     keys,
     gamepadDotRadiusRation,
-    innerRadiusRation,
+    radiusRation,
     angleOffsetMultiplier,
     gamepadId,
     xAxisId,
     yAxisId,
   } = props;
-  const innerRadiusRationSq = innerRadiusRation * innerRadiusRation;
+  const innerRadiusRationSq = radiusRation * radiusRation;
   const segmentAngle = 360 / keys.length;
   const segmentOffset = segmentAngle * angleOffsetMultiplier;
 
@@ -435,7 +502,7 @@ export const RadTypeVis = (props: {
     (gamepadDotRadiusRation * boxSizePx) / actualBoxSizePx;
 
   const actualInnerRadiusRation =
-    (innerRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
+    (radiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
 
   const [x, setX] = React.useState<number | undefined>();
   const [y, setY] = React.useState<number | undefined>();
@@ -466,9 +533,7 @@ export const RadTypeVis = (props: {
     };
   }, [gamepadId, xAxisId, yAxisId, x, y]);
 
-  let angle =
-    x === undefined || y === undefined ? 0 : radToDeg(Math.atan2(y, x));
-  angle = angle < 0 ? angle + 360 : angle;
+  const angle = x === undefined || y === undefined ? 0 : radToDeg(atan2(x, y));
 
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
@@ -506,12 +571,13 @@ export const RadTypeVis = (props: {
           lineThicknessPx={lineThicknessPx}
           fontSize={fontSize}
           keys={keys}
-          innerRadiusRation={innerRadiusRation}
+          innerRadiusRation={radiusRation}
           outerRadiusRation={1}
           angleOffsetMultiplier={angleOffsetMultiplier}
           highlightedSegmentIndex={dotIndex}
+          letterColor={"rgb(0, 0, 0)"}
         />
-        <div className={emo.letter(fontSize)}>{centerKey}</div>
+        <div className={emo.letter(fontSize, "rgb(0, 0, 0)")}>{centerKey}</div>
         <GamepadDot
           boxSizePx={actualBoxSizePx}
           offsetPx={offsetPx}
@@ -580,56 +646,15 @@ export const RadTypeVis2 = (props: {
   const letterRadiusPx =
     ((innerRadiusRation + outerRadiusRation) / 2) * halfBoxSizePx;
 
-  const [x, setX] = React.useState<number | undefined>();
-  const [y, setY] = React.useState<number | undefined>();
-  const animationFrameRef = React.useRef<number | undefined>();
-
-  React.useEffect(() => {
-    if (gamepadId === undefined) return;
-
-    const updateGamepad = () => {
-      const gamepad = navigator.getGamepads()[gamepadId];
-      if (gamepad === null) return;
-
-      const xAxis = gamepad.axes[xAxisId];
-      const yAxis = -gamepad.axes[yAxisId];
-
-      if (xAxis !== x) setX(xAxis);
-      if (yAxis !== y) setY(yAxis);
-
-      animationFrameRef.current = requestAnimationFrame(updateGamepad);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateGamepad);
-
-    return () => {
-      if (animationFrameRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [gamepadId, xAxisId, yAxisId, x, y]);
-
-  let angle =
-    x === undefined || y === undefined ? 0 : radToDeg(Math.atan2(y, x));
-  angle = angle < 0 ? angle + 360 : angle;
-
+  const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
-  let outerDotIndex = undefined;
-  if (outerRadiusRationSq <= magnitudeSq) {
-    outerDotIndex = 0;
-    let currentAngle = outerSegmentOffset;
-
-    while (
-      currentAngle < 360 - outerSegmentOffset &&
-      !(currentAngle <= angle && angle < currentAngle + outerSegmentAngle)
-    ) {
-      currentAngle += outerSegmentAngle;
-      ++outerDotIndex;
-    }
-  }
+  const outerDotIndex =
+    magnitudeSq > outerRadiusRationSq
+      ? calcAngleIndex(xOrZero, yOrZero, outerSegmentAngle, outerSegmentOffset)
+      : undefined;
 
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
@@ -642,26 +667,30 @@ export const RadTypeVis2 = (props: {
           offsetPx={offsetPx}
           borderThicknessRation={actualBorderThicknessRation}
           radiusRation={actualOuterRadiusRation}
-          shouldHighlight={outerDotIndex === undefined}
+          shouldHighlight={false}
         />
         <LetterCircle
-          letters={outerKeys}
-          angle={outerSegmentAngle}
+          letters={innerKeys}
+          angle={innerSegmentAngle}
           offset={innerSegmentOffset}
           radiusPx={letterRadiusPx}
           fontSize={fontSize}
+          color={"rgb(179, 179, 179)"}
         />
         <SegmentedLetterCircle
           boxSizePx={boxSizePx}
           lineThicknessPx={lineThicknessPx}
           fontSize={fontSize}
-          keys={innerKeys}
+          keys={outerKeys}
           innerRadiusRation={outerRadiusRation}
           outerRadiusRation={1}
           angleOffsetMultiplier={outerRingOffsetMultiplier}
           highlightedSegmentIndex={outerDotIndex}
+          letterColor={"rgb(0, 0, 0)"}
         />
-        <div className={emo.letter(fontSize)}>{centerKey}</div>
+        <div className={emo.letter(fontSize, "rgb(179, 179, 179)")}>
+          {centerKey}
+        </div>
         <GamepadDot
           boxSizePx={actualBoxSizePx}
           offsetPx={offsetPx}
@@ -680,15 +709,15 @@ export const Home = () => {
 
   const bigCircleDiameterPx = 500;
 
-  const midCircleDiameterPx = 375;
+  const midCircleDiameterPx = 390;
 
-  const smallCircleDiameterPx = 250;
+  const smallCircleDiameterPx = 280;
 
   const smallCircleRadiusRation = smallCircleDiameterPx / bigCircleDiameterPx;
   const midCircleRadiusRation = midCircleDiameterPx / bigCircleDiameterPx;
 
   const ringOffsetMultiplier = 1 / 2;
-  const letterOffsetMultiplier = 1 / 2;
+  const letterOffsetMultiplier = 0;
 
   const gamepadDotDiameterPx = 5;
   const gamepadDotRadiusRation = gamepadDotDiameterPx / bigCircleDiameterPx;
@@ -726,7 +755,7 @@ export const Home = () => {
           centerKey={"E"}
           keys={["F", "V", "G", "R", "W", "Q", "A", "S", "Z", "X", "C", "D"]}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
-          innerRadiusRation={midCircleRadiusRation}
+          radiusRation={midCircleRadiusRation}
           angleOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={0}
@@ -739,7 +768,7 @@ export const Home = () => {
           centerKey={"T"}
           keys={["L", "P", "O", "I", "U", "Y", "J", "H", "B", "N", "M", "K"]}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
-          innerRadiusRation={midCircleRadiusRation}
+          radiusRation={midCircleRadiusRation}
           angleOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={2}
@@ -753,8 +782,8 @@ export const Home = () => {
           lineThicknessPx={lineThicknessPx}
           fontSize={fontSize}
           centerKey={"E"}
-          outerKeys={["V", "Q", "Z", "X"]}
-          innerKeys={["F", "G", "R", "W", "A", "S", "D", "C"]}
+          innerKeys={["V", "Q", "Z", "X"]}
+          outerKeys={["F", "G", "R", "W", "A", "S", "D", "C"]}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           innerRadiusRation={smallCircleRadiusRation}
           outerRadiusRation={midCircleRadiusRation}
@@ -769,12 +798,12 @@ export const Home = () => {
           lineThicknessPx={lineThicknessPx}
           fontSize={fontSize}
           centerKey={"T"}
-          outerKeys={["P", "K", "J", "B"]}
-          innerKeys={["O", "I", "U", "Y", "H", "N", "M", "L"]}
+          innerKeys={["P", "K", "J", "B"]}
+          outerKeys={["O", "I", "U", "Y", "H", "N", "M", "L"]}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           innerRadiusRation={smallCircleRadiusRation}
           outerRadiusRation={midCircleRadiusRation}
-          innerRingOffsetMultiplier={-letterOffsetMultiplier}
+          innerRingOffsetMultiplier={letterOffsetMultiplier}
           outerRingOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={2}
