@@ -686,9 +686,6 @@ export const RadTypeVis2 = (props: {
 
   const blackColor = "rgb(0, 0, 0)";
   const greyColor = "rgb(179, 179, 179)";
-  const { innerColor, outerColor } = actualAltButton
-    ? { innerColor: blackColor, outerColor: greyColor }
-    : { innerColor: greyColor, outerColor: blackColor };
 
   const innerDotIndex =
     actualAltButton && magnitudeSq > outerRadiusRationSq
@@ -715,40 +712,58 @@ export const RadTypeVis2 = (props: {
           shouldHighlight={isCircleHighlighted}
         />
         {actualAltButton ? (
-          <RingSegments
-            boxSizePx={actualBoxSizePx}
-            offsetPx={offsetPx}
-            borderThicknessRation={actualBorderThicknessRation}
-            startRadiusRation={actualOuterRadiusRation}
-            endRadiusRation={actualEndRadiusRation}
-            numSegments={innerKeys.length}
-            segmentAngle={innerSegmentAngle}
-            segmentOffset={innerSegmentOffset}
-            highlightedSegment={innerDotIndex}
-          />
+          <>
+            <LetterCircle
+              letters={outerKeys}
+              angle={outerSegmentAngle}
+              offset={0}
+              radiusPx={letterRadiusPx}
+              fontSize={fontSize}
+              color={greyColor}
+            />
+            <SegmentedLetterCircle
+              boxSizePx={boxSizePx}
+              lineThicknessPx={lineThicknessPx}
+              fontSize={fontSize}
+              keys={innerKeys}
+              innerRadiusRation={outerRadiusRation}
+              outerRadiusRation={1}
+              angleOffsetMultiplier={0.5}
+              highlightedSegmentIndex={innerDotIndex}
+              letterColor={blackColor}
+            />
+          </>
         ) : (
-          undefined
+          <>
+            <LetterCircle
+              letters={innerKeys}
+              angle={innerSegmentAngle}
+              offset={0}
+              radiusPx={letterRadiusPx}
+              fontSize={fontSize}
+              color={greyColor}
+            />
+            <SegmentedLetterCircle
+              boxSizePx={boxSizePx}
+              lineThicknessPx={lineThicknessPx}
+              fontSize={fontSize}
+              keys={outerKeys}
+              innerRadiusRation={outerRadiusRation}
+              outerRadiusRation={1}
+              angleOffsetMultiplier={0.5}
+              highlightedSegmentIndex={outerDotIndex}
+              letterColor={blackColor}
+            />
+          </>
         )}
-        <LetterCircle
-          letters={innerKeys}
-          angle={innerSegmentAngle}
-          offset={0}
-          radiusPx={letterRadiusPx}
-          fontSize={fontSize}
-          color={innerColor}
-        />
-        <SegmentedLetterCircle
-          boxSizePx={boxSizePx}
-          lineThicknessPx={lineThicknessPx}
-          fontSize={fontSize}
-          keys={outerKeys}
-          innerRadiusRation={outerRadiusRation}
-          outerRadiusRation={1}
-          angleOffsetMultiplier={0.5}
-          highlightedSegmentIndex={outerDotIndex}
-          letterColor={outerColor}
-        />
-        <div className={emo.letter(fontSize, innerColor)}>{centerKey}</div>
+        <div
+          className={emo.letter(
+            fontSize,
+            actualAltButton ? blackColor : greyColor,
+          )}
+        >
+          {centerKey}
+        </div>
         <GamepadDot
           boxSizePx={actualBoxSizePx}
           offsetPx={offsetPx}
