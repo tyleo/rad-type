@@ -633,8 +633,6 @@ export const RadTypeVis2 = (props: {
   readonly gamepadDotRadiusRation: number;
   readonly innerRadiusRation: number;
   readonly outerRadiusRation: number;
-  readonly innerRingOffsetMultiplier: number;
-  readonly outerRingOffsetMultiplier: number;
   // # Behavior
   readonly gamepadId: number | undefined;
   readonly xAxisId: number;
@@ -651,8 +649,6 @@ export const RadTypeVis2 = (props: {
     gamepadDotRadiusRation,
     innerRadiusRation,
     outerRadiusRation,
-    innerRingOffsetMultiplier,
-    outerRingOffsetMultiplier,
     gamepadId,
     xAxisId,
     yAxisId,
@@ -660,10 +656,10 @@ export const RadTypeVis2 = (props: {
   } = props;
   const outerRadiusRationSq = outerRadiusRation * outerRadiusRation;
   const outerSegmentAngle = 360 / outerKeys.length;
-  const outerSegmentOffset = outerSegmentAngle * outerRingOffsetMultiplier;
+  const outerSegmentOffset = outerSegmentAngle * 0.5;
 
   const innerSegmentAngle = 360 / innerKeys.length;
-  const innerSegmentOffset = innerSegmentAngle * innerRingOffsetMultiplier;
+  const innerSegmentOffset = innerSegmentAngle / 2;
 
   const halfLineThicknessPx = lineThicknessPx / 2;
   const actualBoxSizePx = boxSizePx + lineThicknessPx;
@@ -677,6 +673,8 @@ export const RadTypeVis2 = (props: {
     (outerRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
   const letterRadiusPx =
     ((innerRadiusRation + outerRadiusRation) / 2) * halfBoxSizePx;
+  const actualEndRadiusRation =
+    (boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
 
   const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
   const xOrZero = x === undefined ? 0 : x;
@@ -684,17 +682,24 @@ export const RadTypeVis2 = (props: {
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
   const altButton = useButton(gamepadId, altButtonId);
+  const actualAltButton = altButton === undefined ? false : altButton;
 
   const blackColor = "rgb(0, 0, 0)";
   const greyColor = "rgb(179, 179, 179)";
-  const { innerColor, outerColor } = altButton
+  const { innerColor, outerColor } = actualAltButton
     ? { innerColor: blackColor, outerColor: greyColor }
     : { innerColor: greyColor, outerColor: blackColor };
 
+  const innerDotIndex =
+    actualAltButton && magnitudeSq > outerRadiusRationSq
+      ? calcAngleIndex(xOrZero, yOrZero, innerSegmentAngle, innerSegmentOffset)
+      : undefined;
   const outerDotIndex =
-    magnitudeSq > outerRadiusRationSq
+    !actualAltButton && magnitudeSq > outerRadiusRationSq
       ? calcAngleIndex(xOrZero, yOrZero, outerSegmentAngle, outerSegmentOffset)
       : undefined;
+  const isCircleHighlighted =
+    actualAltButton && magnitudeSq <= outerRadiusRationSq;
 
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
@@ -707,12 +712,27 @@ export const RadTypeVis2 = (props: {
           offsetPx={offsetPx}
           borderThicknessRation={actualBorderThicknessRation}
           radiusRation={actualOuterRadiusRation}
-          shouldHighlight={false}
+          shouldHighlight={isCircleHighlighted}
         />
+        {actualAltButton ? (
+          <RingSegments
+            boxSizePx={actualBoxSizePx}
+            offsetPx={offsetPx}
+            borderThicknessRation={actualBorderThicknessRation}
+            startRadiusRation={actualOuterRadiusRation}
+            endRadiusRation={actualEndRadiusRation}
+            numSegments={innerKeys.length}
+            segmentAngle={innerSegmentAngle}
+            segmentOffset={innerSegmentOffset}
+            highlightedSegment={innerDotIndex}
+          />
+        ) : (
+          undefined
+        )}
         <LetterCircle
           letters={innerKeys}
           angle={innerSegmentAngle}
-          offset={innerSegmentOffset}
+          offset={0}
           radiusPx={letterRadiusPx}
           fontSize={fontSize}
           color={innerColor}
@@ -724,7 +744,7 @@ export const RadTypeVis2 = (props: {
           keys={outerKeys}
           innerRadiusRation={outerRadiusRation}
           outerRadiusRation={1}
-          angleOffsetMultiplier={outerRingOffsetMultiplier}
+          angleOffsetMultiplier={0.5}
           highlightedSegmentIndex={outerDotIndex}
           letterColor={outerColor}
         />
@@ -755,7 +775,6 @@ export const Home = () => {
   const midCircleRadiusRation = midCircleDiameterPx / bigCircleDiameterPx;
 
   const ringOffsetMultiplier = 1 / 2;
-  const letterOffsetMultiplier = 0;
 
   const gamepadDotDiameterPx = 5;
   const gamepadDotRadiusRation = gamepadDotDiameterPx / bigCircleDiameterPx;
@@ -825,8 +844,6 @@ export const Home = () => {
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           innerRadiusRation={smallCircleRadiusRation}
           outerRadiusRation={midCircleRadiusRation}
-          innerRingOffsetMultiplier={letterOffsetMultiplier}
-          outerRingOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={0}
           yAxisId={1}
@@ -842,8 +859,6 @@ export const Home = () => {
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           innerRadiusRation={smallCircleRadiusRation}
           outerRadiusRation={midCircleRadiusRation}
-          innerRingOffsetMultiplier={letterOffsetMultiplier}
-          outerRingOffsetMultiplier={ringOffsetMultiplier}
           gamepadId={gamepadId}
           xAxisId={2}
           yAxisId={3}
