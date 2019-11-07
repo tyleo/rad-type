@@ -555,6 +555,7 @@ export const RadTypeVis = (props: {
   // # Style
   readonly boxSizePx: number;
   readonly lineThicknessPx: number;
+  readonly targetLineThicknessPx: number;
   readonly fontSize: number;
   // ## Keys
   readonly centerKey: string;
@@ -568,12 +569,14 @@ export const RadTypeVis = (props: {
   readonly xAxisId: number;
   readonly yAxisId: number;
   readonly altButtonId: number;
+  readonly targetCircleRadiusRation: number;
   // ## Callbacks
   readonly appendLetter: (letter: string) => void;
 }) => {
   const {
     boxSizePx,
     lineThicknessPx,
+    targetLineThicknessPx,
     fontSize,
     centerKey,
     keys,
@@ -584,9 +587,11 @@ export const RadTypeVis = (props: {
     xAxisId,
     yAxisId,
     altButtonId,
+    targetCircleRadiusRation,
     appendLetter,
   } = props;
-  const innerRadiusRationSq = radiusRation * radiusRation;
+  const targetRadiusRationSq =
+    targetCircleRadiusRation * targetCircleRadiusRation;
   const segmentAngle = 360 / keys.length;
   const segmentOffset = segmentAngle * angleOffsetMultiplier;
 
@@ -594,11 +599,16 @@ export const RadTypeVis = (props: {
   const actualBoxSizePx = boxSizePx + lineThicknessPx;
   const offsetPx = -(actualBoxSizePx / 2);
   const actualBorderThicknessRation = lineThicknessPx / actualBoxSizePx;
+  const actualTargetBorderThicknessRation =
+    targetLineThicknessPx / actualBoxSizePx;
   const actualGamepadDotRadiusRation =
     (gamepadDotRadiusRation * boxSizePx) / actualBoxSizePx;
 
   const actualInnerRadiusRation =
     (radiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
+  const actualTargetRadiusRation =
+    (targetCircleRadiusRation * boxSizePx + halfLineThicknessPx) /
+    actualBoxSizePx;
 
   const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
 
@@ -606,7 +616,7 @@ export const RadTypeVis = (props: {
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
-  const isInTriggerZone = magnitudeSq > innerRadiusRationSq;
+  const isInTriggerZone = magnitudeSq > targetRadiusRationSq;
   const dotIndex = isInTriggerZone
     ? calcAngleIndex(xOrZero, yOrZero, segmentAngle, segmentOffset)
     : undefined;
@@ -651,6 +661,14 @@ export const RadTypeVis = (props: {
           letterColor={"rgb(0, 0, 0)"}
         />
         <div className={emo.letter(fontSize, "rgb(0, 0, 0)")}>{centerKey}</div>
+        <Circle
+          boxSizePx={actualBoxSizePx}
+          offsetPx={offsetPx}
+          borderThicknessRation={actualTargetBorderThicknessRation}
+          radiusRation={actualTargetRadiusRation}
+          shouldHighlight={false}
+        />
+
         <GamepadDot
           boxSizePx={actualBoxSizePx}
           offsetPx={offsetPx}
@@ -819,9 +837,11 @@ export const RadTypeVis2 = (props: {
 
 export const Home = () => {
   const lineThicknessPx = 5;
+  const targetLineThicknessPx = 2.5;
   const fontSize = 42;
 
   const bigCircleDiameterPx = 500;
+  const targetCircleDiameterPx = 480;
 
   const midCircleDiameterPx = 390;
 
@@ -829,6 +849,7 @@ export const Home = () => {
 
   const smallCircleRadiusRation = smallCircleDiameterPx / bigCircleDiameterPx;
   const midCircleRadiusRation = midCircleDiameterPx / bigCircleDiameterPx;
+  const targetCircleRadiusRation = targetCircleDiameterPx / bigCircleDiameterPx;
 
   const ringOffsetMultiplier = 1 / 2;
 
@@ -879,6 +900,7 @@ export const Home = () => {
         <RadTypeVis
           boxSizePx={bigCircleDiameterPx}
           lineThicknessPx={lineThicknessPx}
+          targetLineThicknessPx={targetLineThicknessPx}
           fontSize={fontSize}
           centerKey={"E"}
           keys={["F", "V", "G", "R", "W", "Q", "A", "S", "Z", "X", "C", "D"]}
@@ -889,11 +911,13 @@ export const Home = () => {
           xAxisId={0}
           yAxisId={1}
           altButtonId={4}
+          targetCircleRadiusRation={targetCircleRadiusRation}
           appendLetter={appendLetter0}
         />
         <RadTypeVis
           boxSizePx={bigCircleDiameterPx}
           lineThicknessPx={lineThicknessPx}
+          targetLineThicknessPx={targetLineThicknessPx}
           fontSize={fontSize}
           centerKey={"T"}
           keys={["L", "P", "O", "I", "U", "Y", "J", "H", "B", "N", "M", "K"]}
@@ -904,6 +928,7 @@ export const Home = () => {
           xAxisId={2}
           yAxisId={3}
           altButtonId={5}
+          targetCircleRadiusRation={targetCircleRadiusRation}
           appendLetter={appendLetter0}
         />
       </div>
