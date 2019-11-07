@@ -178,23 +178,26 @@ const emo = {
     position: relative;
   `,
 
-  row: (widthPx: number, heightPx: number) => Emotion.css`
+  row: (heightPx: number) => Emotion.css`
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    width: ${widthPx}px;
     height: ${heightPx}px;
   `,
 
+  rowWidthed: (widthPx: number, heightPx: number) => Emotion.css`
+    ${emo.row(heightPx)};
+    width: ${widthPx}px;
+  `,
+
   letter: (fontSize: number, color: string) => Emotion.css`
+    ${emo.text(fontSize)};
     color: ${color};
     display: flex;
     position: absolute;
     line-height: 0px;
     justify-content: center;
-    font-family: "Arial Rounded MT Bold";
-    font-size: ${fontSize}px;
     width: 0px;
   `,
 
@@ -211,6 +214,11 @@ const emo = {
       bottom: ${radius * Math.sin(angleRad)}px;
     `;
   },
+
+  text: (fontSize: number) => Emotion.css`
+    font-family: "Arial Rounded MT Bold";
+    font-size: ${fontSize}px;
+  `,
 
   vertical: () => Emotion.css`
     display: flex;
@@ -865,11 +873,9 @@ export const Home = () => {
   useButtonEvents(gamepadId, 2, undefined, backspace0);
   useButtonEvents(gamepadId, 3, undefined, appendSpace0);
 
-  React.useEffect(() => console.log(text0));
-
   return (
     <div className={emo.vertical()}>
-      <div className={emo.row(rowWidthPx, rowHeightPx)}>
+      <div className={emo.rowWidthed(rowWidthPx, rowHeightPx)}>
         <RadTypeVis
           boxSizePx={bigCircleDiameterPx}
           lineThicknessPx={lineThicknessPx}
@@ -902,7 +908,11 @@ export const Home = () => {
         />
       </div>
 
-      <div className={emo.row(rowWidthPx, rowHeightPx)}>
+      <div className={emo.row(rowHeightPx)}>
+        <div className={emo.text(fontSize)}>{text0}</div>
+      </div>
+
+      <div className={emo.rowWidthed(rowWidthPx, rowHeightPx)}>
         <RadTypeVis2
           boxSizePx={bigCircleDiameterPx}
           lineThicknessPx={lineThicknessPx}
