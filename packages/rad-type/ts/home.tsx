@@ -640,10 +640,10 @@ export const RadTypeVis = (props: {
     lastDotIndex.current = dotIndex;
   }, [dotIndex, keys, appendLetter]);
 
-  const onAltButtonChanged = React.useCallback(() => appendLetter(centerKey), [
-    appendLetter,
-    centerKey,
-  ]);
+  const onAltButtonChanged = React.useCallback(
+    () => (isInTinyZone ? appendLetter(centerKey) : {}),
+    [appendLetter, centerKey, isInTinyZone],
+  );
   useButtonEvents(gamepadId, altButtonId, undefined, onAltButtonChanged);
 
   return (
