@@ -34,6 +34,34 @@ const range = (first: number, count: number): number[] => {
   return result;
 };
 
+const useGamepad = (
+  gamepadId: number | undefined,
+  gamepadCallback: (gamepad: Gamepad) => void,
+) => {
+  const animationFrameRef = React.useRef<number | undefined>();
+
+  React.useEffect(() => {
+    if (gamepadId === undefined) return;
+
+    const updateGamepad = () => {
+      const gamepad = navigator.getGamepads()[gamepadId];
+      if (gamepad === null) return;
+
+      gamepadCallback(gamepad);
+
+      animationFrameRef.current = requestAnimationFrame(updateGamepad);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(updateGamepad);
+
+    return () => {
+      if (animationFrameRef.current !== undefined) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [gamepadId, gamepadCallback]);
+};
+
 const useJoystick = (
   gamepadId: number | undefined,
   xAxisId: number,
@@ -41,64 +69,89 @@ const useJoystick = (
 ) => {
   const [x, setX] = React.useState<number | undefined>();
   const [y, setY] = React.useState<number | undefined>();
-  const animationFrameRef = React.useRef<number | undefined>();
 
-  React.useEffect(() => {
-    if (gamepadId === undefined) return;
-
-    const updateGamepad = () => {
-      const gamepad = navigator.getGamepads()[gamepadId];
-      if (gamepad === null) return;
-
+  const onGamepad = React.useCallback(
+    (gamepad: Gamepad) => {
       const xAxis = gamepad.axes[xAxisId];
       const yAxis = -gamepad.axes[yAxisId];
 
       if (xAxis !== x) setX(xAxis);
       if (yAxis !== y) setY(yAxis);
+    },
+    [xAxisId, yAxisId, x, y],
+  );
 
-      animationFrameRef.current = requestAnimationFrame(updateGamepad);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateGamepad);
-
-    return () => {
-      if (animationFrameRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [gamepadId, xAxisId, yAxisId, x, y]);
+  useGamepad(gamepadId, onGamepad);
 
   return [x, y];
 };
 
 const useButton = (gamepadId: number | undefined, buttonId: number) => {
   const [state, setState] = React.useState<boolean | undefined>();
-  const animationFrameRef = React.useRef<number | undefined>();
 
-  React.useEffect(() => {
-    if (gamepadId === undefined) return;
-
-    const updateGamepad = () => {
-      const gamepad = navigator.getGamepads()[gamepadId];
-      if (gamepad === null) return;
-
+  const onGamepad = React.useCallback(
+    (gamepad: Gamepad) => {
       const button = gamepad.buttons[buttonId];
 
       if (button.pressed !== state) setState(button.pressed);
+    },
+    [buttonId, state],
+  );
 
-      animationFrameRef.current = requestAnimationFrame(updateGamepad);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateGamepad);
-
-    return () => {
-      if (animationFrameRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [gamepadId, buttonId, state]);
+  useGamepad(gamepadId, onGamepad);
 
   return state;
+};
+
+function useChangeEvent<T>(value: T, onChange: (prev: T, current: T) => void) {
+  const lastValue = React.useRef(value);
+  React.useEffect(() => {
+    if (lastValue.current !== value) {
+      onChange(lastValue.current, value);
+    }
+    lastValue.current = value;
+  }, [value, onChange]);
+}
+
+const useButtonEvents = (
+  gamepadId: number | undefined,
+  buttonId: number,
+  onPress?: () => void,
+  onRelease?: () => void,
+) => {
+  const button = useButton(gamepadId, buttonId);
+  const onButtonChanged = React.useCallback(
+    (prev: boolean | undefined, current: boolean | undefined) => {
+      prev = prev === undefined ? false : prev;
+      current = current === undefined ? false : current;
+      if (prev !== current) {
+        if (current) {
+          if (onPress) onPress();
+        } else {
+          if (onRelease) onRelease();
+        }
+      }
+    },
+    [onPress, onRelease],
+  );
+  useChangeEvent(button, onButtonChanged);
+};
+
+const useLogButtons = (gamepadId: number | undefined) => {
+  const onGamepad = React.useCallback((gamepad: Gamepad) => {
+    let str = gamepad.buttons.reduce((prev, current, index) => {
+      prev = `${prev}${index}: ${current.pressed}, `;
+      return prev;
+    }, "{ ");
+    if (gamepad.buttons.length > 0) {
+      str = str.slice(0, -2);
+      str = `${str} `;
+    }
+    str = `${str}}`;
+    console.log(str);
+  }, []);
+
+  useGamepad(gamepadId, onGamepad);
 };
 
 const emo = {
@@ -506,6 +559,9 @@ export const RadTypeVis = (props: {
   readonly gamepadId: number | undefined;
   readonly xAxisId: number;
   readonly yAxisId: number;
+  readonly altButtonId: number;
+  // ## Callbacks
+  readonly appendLetter: (letter: string) => void;
 }) => {
   const {
     boxSizePx,
@@ -519,6 +575,8 @@ export const RadTypeVis = (props: {
     gamepadId,
     xAxisId,
     yAxisId,
+    altButtonId,
+    appendLetter,
   } = props;
   const innerRadiusRationSq = radiusRation * radiusRation;
   const segmentAngle = 360 / keys.length;
@@ -534,57 +592,34 @@ export const RadTypeVis = (props: {
   const actualInnerRadiusRation =
     (radiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
 
-  const [x, setX] = React.useState<number | undefined>();
-  const [y, setY] = React.useState<number | undefined>();
-  const animationFrameRef = React.useRef<number | undefined>();
-
-  React.useEffect(() => {
-    if (gamepadId === undefined) return;
-
-    const updateGamepad = () => {
-      const gamepad = navigator.getGamepads()[gamepadId];
-      if (gamepad === null) return;
-
-      const xAxis = gamepad.axes[xAxisId];
-      const yAxis = -gamepad.axes[yAxisId];
-
-      if (xAxis !== x) setX(xAxis);
-      if (yAxis !== y) setY(yAxis);
-
-      animationFrameRef.current = requestAnimationFrame(updateGamepad);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateGamepad);
-
-    return () => {
-      if (animationFrameRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [gamepadId, xAxisId, yAxisId, x, y]);
-
-  const angle = x === undefined || y === undefined ? 0 : radToDeg(atan2(x, y));
+  const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
 
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
-  let dotIndex = undefined;
-  if (innerRadiusRationSq <= magnitudeSq) {
-    dotIndex = 0;
-    let currentAngle = segmentOffset;
-
-    while (
-      currentAngle < 360 - segmentOffset &&
-      !(currentAngle <= angle && angle < currentAngle + segmentAngle)
-    ) {
-      currentAngle += segmentAngle;
-      ++dotIndex;
-    }
-  }
+  const isInTriggerZone = magnitudeSq > innerRadiusRationSq;
+  const dotIndex = isInTriggerZone
+    ? calcAngleIndex(xOrZero, yOrZero, segmentAngle, segmentOffset)
+    : undefined;
 
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
+
+  const lastDotIndex = React.useRef(dotIndex);
+  React.useEffect(() => {
+    if (dotIndex === undefined && lastDotIndex.current !== dotIndex) {
+      const key = keys[(lastDotIndex.current + 1) % keys.length];
+      appendLetter(key);
+    }
+    lastDotIndex.current = dotIndex;
+  }, [dotIndex, keys, appendLetter]);
+
+  const onAltButtonChanged = React.useCallback(() => appendLetter(centerKey), [
+    appendLetter,
+    centerKey,
+  ]);
+  useButtonEvents(gamepadId, altButtonId, undefined, onAltButtonChanged);
 
   return (
     <div className={emo.radTypeContainerRelativeContainer(actualBoxSizePx)}>
@@ -673,8 +708,6 @@ export const RadTypeVis2 = (props: {
     (outerRadiusRation * boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
   const letterRadiusPx =
     ((innerRadiusRation + outerRadiusRation) / 2) * halfBoxSizePx;
-  const actualEndRadiusRation =
-    (boxSizePx + halfLineThicknessPx) / actualBoxSizePx;
 
   const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
   const xOrZero = x === undefined ? 0 : x;
@@ -817,6 +850,23 @@ export const Home = () => {
       window.removeEventListener("gamepaddisconnected", eventListener);
   });
 
+  const [text0, setText0] = React.useState("");
+  const appendLetter0 = React.useCallback(
+    (letter: string) => setText0(t => `${t}${letter}`),
+    [setText0],
+  );
+  const backspace0 = React.useCallback(() => setText0(t => t.slice(0, -1)), [
+    setText0,
+  ]);
+  const appendSpace0 = React.useCallback(() => appendLetter0(" "), [
+    appendLetter0,
+  ]);
+
+  useButtonEvents(gamepadId, 2, undefined, backspace0);
+  useButtonEvents(gamepadId, 3, undefined, appendSpace0);
+
+  React.useEffect(() => console.log(text0));
+
   return (
     <div className={emo.vertical()}>
       <div className={emo.row(rowWidthPx, rowHeightPx)}>
@@ -832,6 +882,8 @@ export const Home = () => {
           gamepadId={gamepadId}
           xAxisId={0}
           yAxisId={1}
+          altButtonId={4}
+          appendLetter={appendLetter0}
         />
         <RadTypeVis
           boxSizePx={bigCircleDiameterPx}
@@ -845,6 +897,8 @@ export const Home = () => {
           gamepadId={gamepadId}
           xAxisId={2}
           yAxisId={3}
+          altButtonId={5}
+          appendLetter={appendLetter0}
         />
       </div>
 
@@ -880,6 +934,8 @@ export const Home = () => {
           altButtonId={5}
         />
       </div>
+
+      <div>{}</div>
     </div>
   );
 };

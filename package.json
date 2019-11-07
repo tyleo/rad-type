@@ -19,7 +19,7 @@
     "ts-node": "^8.0.2",
     "ts-transform-paths": "^2.0.0",
     "ttypescript": "^1.5.6",
-    "typescript": "^3.6.4"
+    "typescript": "^3.7"
   },
   "scripts": {
     "clean": "yarn lerna run --parallel clean & yarn clean:root",
