@@ -201,15 +201,10 @@ const emo = {
     width: 0px;
   `,
 
-  circleLetter: (
-    angleDeg: number,
-    radius: number,
-    fontSize: number,
-    color: string,
-  ) => {
+  circleItem: (angleDeg: number, radius: number) => {
     const angleRad = degToRad(angleDeg);
     return Emotion.css`
-      ${emo.letter(fontSize, color)};
+      position: absolute;
       left: ${radius * Math.cos(angleRad)}px;
       bottom: ${radius * Math.sin(angleRad)}px;
     `;
@@ -421,7 +416,35 @@ const RingSegments = React.memo(
   },
 );
 
-export const LetterCircle = React.memo(
+export const ElementRing = React.memo(
+  (props: {
+    readonly nodes: readonly React.ReactNode[];
+    readonly angle: number;
+    readonly offset: number;
+    readonly radiusPx: number;
+  }) => {
+    const circleItem = React.useCallback(
+      (item: React.ReactNode, angle: number, index: number) => {
+        const style = emo.circleItem(angle, props.radiusPx);
+        return (
+          <div key={index} className={style}>
+            {item}
+          </div>
+        );
+      },
+      [props.radiusPx],
+    );
+    return (
+      <>
+        {props.nodes.map((i, index) =>
+          circleItem(i, index * props.angle + props.offset, index),
+        )}
+      </>
+    );
+  },
+);
+
+export const LetterRing = React.memo(
   (props: {
     readonly letters: string[];
     readonly angle: number;
@@ -430,28 +453,21 @@ export const LetterCircle = React.memo(
     readonly fontSize: number;
     readonly color: string;
   }) => {
-    const circleLetter = React.useCallback(
-      (letter: string, angle: number, color: string) => {
-        const style = emo.circleLetter(
-          angle,
-          props.radiusPx,
-          props.fontSize,
-          color,
-        );
-        return (
-          <div key={letter} className={style}>
-            {letter}
-          </div>
-        );
-      },
-      [props.radiusPx, props.fontSize],
+    const circleLetter = React.useMemo(
+      () =>
+        props.letters.map(i => {
+          const style = emo.letter(props.fontSize, props.color);
+          return <div className={style}>{i}</div>;
+        }),
+      [props.letters, props.fontSize, props.color],
     );
     return (
-      <>
-        {props.letters.map((i, index) =>
-          circleLetter(i, index * props.angle + props.offset, props.color),
-        )}
-      </>
+      <ElementRing
+        nodes={circleLetter}
+        angle={props.angle}
+        offset={props.offset}
+        radiusPx={props.radiusPx}
+      />
     );
   },
 );
@@ -539,7 +555,7 @@ export const SegmentedLetterCircle = (props: {
         segmentOffset={segmentOffset}
         highlightedSegment={highlightedSegmentIndex}
       />
-      <LetterCircle
+      <LetterRing
         letters={keys}
         angle={segmentAngle}
         offset={0}
@@ -669,7 +685,7 @@ export const RadTypeVis = (props: {
           highlightedSegment={dotIndex}
         />
 
-        <LetterCircle
+        <LetterRing
           letters={keys}
           angle={segmentAngle}
           offset={0}
@@ -809,7 +825,7 @@ export const RadTypeVis2 = (props: {
               segmentOffset={altSegmentOffset}
               highlightedSegment={altDotIndex}
             />
-            <LetterCircle
+            <LetterRing
               letters={defaultKeys}
               angle={defaultSegmentAngle}
               offset={0}
@@ -817,7 +833,7 @@ export const RadTypeVis2 = (props: {
               fontSize={fontSize}
               color={greyColor}
             />
-            <LetterCircle
+            <LetterRing
               letters={altKeys}
               angle={altSegmentAngle}
               offset={0}
@@ -839,7 +855,7 @@ export const RadTypeVis2 = (props: {
               segmentOffset={defaultSegmentOffset}
               highlightedSegment={defaultDotIndex}
             />
-            <LetterCircle
+            <LetterRing
               letters={altKeys}
               angle={altSegmentAngle}
               offset={0}
@@ -847,7 +863,7 @@ export const RadTypeVis2 = (props: {
               fontSize={fontSize}
               color={greyColor}
             />
-            <LetterCircle
+            <LetterRing
               letters={defaultKeys}
               angle={defaultSegmentAngle}
               offset={0}
