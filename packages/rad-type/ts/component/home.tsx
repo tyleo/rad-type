@@ -157,45 +157,6 @@ export const Home = () => {
             lineThicknessPx={lineThicknessPx}
             fontSize={fontSize}
             centerKey={"E"}
-            defaultKeys={["F", "G", "R", "W", "A", "S", "D", "C"]}
-            altKeys={["V", "Q", "Z", "X"]}
-            targetCircleRadiusRation={targetCircleRadiusRation}
-            letterCircleRadiusRation={letterCircleRadiusRation}
-            altLetterCircleRadiusRation={altLetterCircleRadiusRation}
-            tinyCircleRadiusRation={tinyCircleRadiusRation}
-            gamepadDotRadiusRation={gamepadDotRadiusRation}
-            gamepadId={gamepadId}
-            xAxisId={0}
-            yAxisId={1}
-            altButtonId={4}
-            appendLetter={appendLetter}
-          />
-          <RadType.RadTypeVisEx
-            boxSizePx={bigCircleDiameterPx}
-            lineThicknessPx={lineThicknessPx}
-            fontSize={fontSize}
-            centerKey={"T"}
-            defaultKeys={["O", "I", "U", "Y", "H", "N", "M", "L"]}
-            altKeys={["P", "K", "J", "B"]}
-            targetCircleRadiusRation={targetCircleRadiusRation}
-            letterCircleRadiusRation={letterCircleRadiusRation}
-            altLetterCircleRadiusRation={altLetterCircleRadiusRation}
-            tinyCircleRadiusRation={tinyCircleRadiusRation}
-            gamepadDotRadiusRation={gamepadDotRadiusRation}
-            gamepadId={gamepadId}
-            xAxisId={2}
-            yAxisId={3}
-            altButtonId={5}
-            appendLetter={appendLetter}
-          />
-        </>
-      ) : (
-        <>
-          <RadType.RadTypeVisEx
-            boxSizePx={bigCircleDiameterPx}
-            lineThicknessPx={lineThicknessPx}
-            fontSize={fontSize}
-            centerKey={"E"}
             defaultKeys={["R", "U", "A", "S", "D", "C"]}
             altKeys={["F", "G", "Q", "Z", "X", "V"]}
             targetCircleRadiusRation={targetCircleRadiusRation}
@@ -216,6 +177,45 @@ export const Home = () => {
             centerKey={"T"}
             defaultKeys={["L", "O", "I", "H", "N", "M"]}
             altKeys={["K", "P", "Y", "J", "B", "W"]}
+            targetCircleRadiusRation={targetCircleRadiusRation}
+            letterCircleRadiusRation={letterCircleRadiusRation}
+            altLetterCircleRadiusRation={altLetterCircleRadiusRation}
+            tinyCircleRadiusRation={tinyCircleRadiusRation}
+            gamepadDotRadiusRation={gamepadDotRadiusRation}
+            gamepadId={gamepadId}
+            xAxisId={2}
+            yAxisId={3}
+            altButtonId={5}
+            appendLetter={appendLetter}
+          />
+        </>
+      ) : (
+        <>
+          <RadType.RadTypeVisEx
+            boxSizePx={bigCircleDiameterPx}
+            lineThicknessPx={lineThicknessPx}
+            fontSize={fontSize}
+            centerKey={"E"}
+            defaultKeys={["F", "G", "R", "W", "A", "S", "D", "C"]}
+            altKeys={["V", "Q", "Z", "X"]}
+            targetCircleRadiusRation={targetCircleRadiusRation}
+            letterCircleRadiusRation={letterCircleRadiusRation}
+            altLetterCircleRadiusRation={altLetterCircleRadiusRation}
+            tinyCircleRadiusRation={tinyCircleRadiusRation}
+            gamepadDotRadiusRation={gamepadDotRadiusRation}
+            gamepadId={gamepadId}
+            xAxisId={0}
+            yAxisId={1}
+            altButtonId={4}
+            appendLetter={appendLetter}
+          />
+          <RadType.RadTypeVisEx
+            boxSizePx={bigCircleDiameterPx}
+            lineThicknessPx={lineThicknessPx}
+            fontSize={fontSize}
+            centerKey={"T"}
+            defaultKeys={["O", "I", "U", "Y", "H", "N", "M", "L"]}
+            altKeys={["P", "K", "J", "B"]}
             targetCircleRadiusRation={targetCircleRadiusRation}
             letterCircleRadiusRation={letterCircleRadiusRation}
             altLetterCircleRadiusRation={altLetterCircleRadiusRation}
