@@ -725,6 +725,7 @@ export const RadTypeVis2 = (props: {
   // ## Circles
   readonly targetCircleRadiusRation: number;
   readonly letterCircleRadiusRation: number;
+  readonly altLetterCircleRadiusRation: number;
   readonly tinyCircleRadiusRation: number;
   readonly gamepadDotRadiusRation: number;
   // # Behavior
@@ -742,6 +743,7 @@ export const RadTypeVis2 = (props: {
     altKeys,
     gamepadDotRadiusRation,
     letterCircleRadiusRation,
+    altLetterCircleRadiusRation,
     targetCircleRadiusRation,
     tinyCircleRadiusRation,
     gamepadId,
@@ -776,6 +778,9 @@ export const RadTypeVis2 = (props: {
     actualBoxSizePx;
   const letterRadiusPx =
     ((letterCircleRadiusRation + targetCircleRadiusRation) / 2) * halfBoxSizePx;
+  const altLetterRadiusPx =
+    ((altLetterCircleRadiusRation + letterCircleRadiusRation) / 2) *
+    halfBoxSizePx;
 
   const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
   const xOrZero = x === undefined ? 0 : x;
@@ -807,40 +812,15 @@ export const RadTypeVis2 = (props: {
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
-  const letters = React.useMemo(
-    () =>
-      defaultKeys.map((i, index) => {
-        const altLetterMod = Math.round(defaultKeys.length / altKeys.length);
-        const hasAltLetter = index % altLetterMod === 0;
-        const altLetterIndex = hasAltLetter
-          ? Math.round(index / altLetterMod)
-          : undefined;
-        const altLetter =
-          altLetterIndex === undefined ? undefined : altKeys[altLetterIndex];
-
-        const { defaultLetterColor, altLetterColor } = actualAltButton
-          ? {
-              defaultLetterColor: greyColor,
-              altLetterColor: blackColor,
-            }
-          : {
-              defaultLetterColor: blackColor,
-              altLetterColor: greyColor,
-            };
-
-        return hasAltLetter ? (
-          <div className={emo.flexJustified()}>
-            <div className={emo.letter(fontSize, defaultLetterColor)}>{i}</div>
-            <div className={emo.letter(fontSize, altLetterColor)}>
-              {altLetter}
-            </div>
-          </div>
-        ) : (
-          <div className={emo.letter(fontSize, defaultLetterColor)}>{i}</div>
-        );
-      }),
-    [actualAltButton, altKeys, defaultKeys, fontSize],
-  );
+  const { defaultLetterColor, altLetterColor } = actualAltButton
+    ? {
+        defaultLetterColor: greyColor,
+        altLetterColor: blackColor,
+      }
+    : {
+        defaultLetterColor: blackColor,
+        altLetterColor: greyColor,
+      };
 
   return (
     <div className={emo.radTypeContainerRelativeContainer(actualBoxSizePx)}>
@@ -878,11 +858,22 @@ export const RadTypeVis2 = (props: {
           />
         )}
 
-        <ElementRing
-          nodes={letters}
+        <LetterRing
+          letters={defaultKeys}
           angle={defaultSegmentAngle}
           offset={0}
           radiusPx={letterRadiusPx}
+          fontSize={fontSize}
+          color={defaultLetterColor}
+        />
+
+        <LetterRing
+          letters={altKeys}
+          angle={altSegmentAngle}
+          offset={0}
+          radiusPx={altLetterRadiusPx}
+          fontSize={fontSize}
+          color={altLetterColor}
         />
 
         <div
@@ -913,10 +904,13 @@ export const Home = () => {
   const bigCircleDiameterPx = 500;
   const targetCircleDiameterPx = 460;
   const letterCircleDiameterPx = 350;
+  const altLetterCircleDiameterPx = 240;
   const tinyCircleDiameterPx = 100;
 
   const targetCircleRadiusRation = targetCircleDiameterPx / bigCircleDiameterPx;
   const letterCircleRadiusRation = letterCircleDiameterPx / bigCircleDiameterPx;
+  const altLetterCircleRadiusRation =
+    altLetterCircleDiameterPx / bigCircleDiameterPx;
   const tinyCircleRadiusRation = tinyCircleDiameterPx / bigCircleDiameterPx;
 
   const ringOffsetMultiplier = 1 / 2;
@@ -1015,6 +1009,7 @@ export const Home = () => {
           altKeys={["V", "Q", "Z", "X"]}
           targetCircleRadiusRation={targetCircleRadiusRation}
           letterCircleRadiusRation={letterCircleRadiusRation}
+          altLetterCircleRadiusRation={altLetterCircleRadiusRation}
           tinyCircleRadiusRation={tinyCircleRadiusRation}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           gamepadId={gamepadId}
@@ -1031,6 +1026,7 @@ export const Home = () => {
           altKeys={["P", "K", "J", "B"]}
           targetCircleRadiusRation={targetCircleRadiusRation}
           letterCircleRadiusRation={letterCircleRadiusRation}
+          altLetterCircleRadiusRation={altLetterCircleRadiusRation}
           tinyCircleRadiusRation={tinyCircleRadiusRation}
           gamepadDotRadiusRation={gamepadDotRadiusRation}
           gamepadId={gamepadId}
