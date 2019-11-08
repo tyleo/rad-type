@@ -719,7 +719,7 @@ export const RadTypeVis2 = (props: {
   readonly lineThicknessPx: number;
   readonly fontSize: number;
   // ## Keys
-  readonly centerKey?: string;
+  readonly centerKey: string;
   readonly defaultKeys: string[];
   readonly altKeys: string[];
   // ## Circles
@@ -733,6 +733,8 @@ export const RadTypeVis2 = (props: {
   readonly xAxisId: number;
   readonly yAxisId: number;
   readonly altButtonId: number;
+  // ## Callbacks
+  readonly appendLetter: (letter: string) => void;
 }) => {
   const {
     boxSizePx,
@@ -750,6 +752,7 @@ export const RadTypeVis2 = (props: {
     xAxisId,
     yAxisId,
     altButtonId,
+    appendLetter,
   } = props;
   const targetRadiusRationSq =
     targetCircleRadiusRation * targetCircleRadiusRation;
@@ -821,6 +824,51 @@ export const RadTypeVis2 = (props: {
         defaultLetterColor: blackColor,
         altLetterColor: greyColor,
       };
+
+  const lastDefaultDotIndex = React.useRef(defaultDotIndex);
+  React.useEffect(() => {
+    if (
+      defaultDotIndex === undefined &&
+      lastDefaultDotIndex.current !== defaultDotIndex &&
+      !altButton
+    ) {
+      const key =
+        defaultKeys[(lastDefaultDotIndex.current + 1) % defaultKeys.length];
+      appendLetter(key);
+    }
+    lastDefaultDotIndex.current = defaultDotIndex;
+  }, [defaultDotIndex, defaultKeys, appendLetter, altButton]);
+
+  const [enteredAltKey, setEnteredAltKey] = React.useState(false);
+
+  const lastAltDotIndex = React.useRef(altDotIndex);
+  React.useEffect(() => {
+    if (
+      altDotIndex === undefined &&
+      lastAltDotIndex.current !== altDotIndex &&
+      altButton
+    ) {
+      const key = altKeys[(lastAltDotIndex.current + 1) % altKeys.length];
+      appendLetter(key);
+      setEnteredAltKey(true);
+    }
+    lastAltDotIndex.current = altDotIndex;
+  }, [altDotIndex, altKeys, appendLetter, altButton]);
+
+  const onAltButtonPressed = React.useCallback(
+    () => setEnteredAltKey(false),
+    [],
+  );
+  const onAltButtonReleased = React.useCallback(
+    () => (isInTinyZone && !enteredAltKey ? appendLetter(centerKey) : {}),
+    [appendLetter, centerKey, isInTinyZone, enteredAltKey],
+  );
+  useButtonEvents(
+    gamepadId,
+    altButtonId,
+    onAltButtonPressed,
+    onAltButtonReleased,
+  );
 
   return (
     <div className={emo.radTypeContainerRelativeContainer(actualBoxSizePx)}>
@@ -956,6 +1004,21 @@ export const Home = () => {
   useButtonEvents(gamepadId, 2, undefined, backspace0);
   useButtonEvents(gamepadId, 3, undefined, appendSpace0);
 
+  const [text1, setText1] = React.useState("");
+  const appendLetter1 = React.useCallback(
+    (letter: string) => setText1(t => `${t}${letter}`),
+    [setText1],
+  );
+  const backspace1 = React.useCallback(() => setText1(t => t.slice(0, -1)), [
+    setText1,
+  ]);
+  const appendSpace1 = React.useCallback(() => appendLetter1(" "), [
+    appendLetter1,
+  ]);
+
+  useButtonEvents(gamepadId, 2, undefined, backspace1);
+  useButtonEvents(gamepadId, 3, undefined, appendSpace1);
+
   return (
     <div className={emo.vertical()}>
       <div className={emo.rowWidthed(rowWidthPx, rowHeightPx)}>
@@ -1016,6 +1079,7 @@ export const Home = () => {
           xAxisId={0}
           yAxisId={1}
           altButtonId={4}
+          appendLetter={appendLetter1}
         />
         <RadTypeVis2
           boxSizePx={bigCircleDiameterPx}
@@ -1033,10 +1097,13 @@ export const Home = () => {
           xAxisId={2}
           yAxisId={3}
           altButtonId={5}
+          appendLetter={appendLetter1}
         />
       </div>
 
-      <div>{}</div>
+      <div className={emo.row(rowHeightPx)}>
+        <div className={emo.text(fontSize)}>{text1}</div>
+      </div>
     </div>
   );
 };
