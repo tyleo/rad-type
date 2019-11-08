@@ -13,16 +13,16 @@ const emo = {
     margin-right: 5px;
   `,
 
-  row: (paddingPx: number) => Emotion.css`
+  row: (marginPx: number) => Emotion.css`
     display: flex;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding-top: ${paddingPx}px;
-    padding-bottom: ${paddingPx}px;
+    margin-top: ${marginPx}px;
+    margin-bottom: ${marginPx}px;
   `,
-  rowHeighted: (heightPx: number, paddingPx: number) => Emotion.css`
-    ${emo.row(heightPx)};
+  rowHeighted: (heightPx: number, marginPx: number) => Emotion.css`
+    ${emo.row(marginPx)};
     height: ${heightPx}px;
   `,
 
@@ -61,8 +61,8 @@ export const Home = () => {
   const gamepadDotDiameterPx = 5;
   const gamepadDotRadiusRation = gamepadDotDiameterPx / bigCircleDiameterPx;
   const rowWidthPx = 1050;
-  const rowHeightPx = 100;
-  const rowPaddingPx = 50;
+  const rowHeightPx = 50;
+  const rowMarginPx = 25;
 
   const [gamepadId, setGamepadId] = React.useState<number | undefined>();
 
@@ -103,7 +103,9 @@ export const Home = () => {
   const [visualizationId, setVisualizationId] = React.useState(0);
   const toggleVisualizationId = React.useCallback(
     () =>
-      setVisualizationId(visualizationId => (visualizationId === 0 ? 1 : 0)),
+      setVisualizationId(visualizationId =>
+        visualizationId === 0 ? 1 : visualizationId === 1 ? 2 : 0,
+      ),
     [],
   );
 
@@ -148,7 +150,7 @@ export const Home = () => {
             appendLetter={appendLetter}
           />
         </>
-      ) : (
+      ) : visualizationId === 1 ? (
         <>
           <RadType.RadTypeVisEx
             boxSizePx={bigCircleDiameterPx}
@@ -187,6 +189,45 @@ export const Home = () => {
             appendLetter={appendLetter}
           />
         </>
+      ) : (
+        <>
+          <RadType.RadTypeVisEx
+            boxSizePx={bigCircleDiameterPx}
+            lineThicknessPx={lineThicknessPx}
+            fontSize={fontSize}
+            centerKey={"E"}
+            defaultKeys={["R", "U", "A", "S", "D", "C"]}
+            altKeys={["F", "G", "Q", "Z", "X", "V"]}
+            targetCircleRadiusRation={targetCircleRadiusRation}
+            letterCircleRadiusRation={letterCircleRadiusRation}
+            altLetterCircleRadiusRation={altLetterCircleRadiusRation}
+            tinyCircleRadiusRation={tinyCircleRadiusRation}
+            gamepadDotRadiusRation={gamepadDotRadiusRation}
+            gamepadId={gamepadId}
+            xAxisId={0}
+            yAxisId={1}
+            altButtonId={4}
+            appendLetter={appendLetter}
+          />
+          <RadType.RadTypeVisEx
+            boxSizePx={bigCircleDiameterPx}
+            lineThicknessPx={lineThicknessPx}
+            fontSize={fontSize}
+            centerKey={"T"}
+            defaultKeys={["L", "O", "I", "H", "N", "M"]}
+            altKeys={["K", "P", "Y", "J", "B", "W"]}
+            targetCircleRadiusRation={targetCircleRadiusRation}
+            letterCircleRadiusRation={letterCircleRadiusRation}
+            altLetterCircleRadiusRation={altLetterCircleRadiusRation}
+            tinyCircleRadiusRation={tinyCircleRadiusRation}
+            gamepadDotRadiusRation={gamepadDotRadiusRation}
+            gamepadId={gamepadId}
+            xAxisId={2}
+            yAxisId={3}
+            altButtonId={5}
+            appendLetter={appendLetter}
+          />
+        </>
       ),
     [
       altLetterCircleRadiusRation,
@@ -203,15 +244,21 @@ export const Home = () => {
 
   return (
     <div className={emo.vertical()}>
-      <div className={emo.rowWidthed(rowWidthPx, rowPaddingPx)}>
+      <div className={emo.rowHeighted(rowHeightPx, rowMarginPx)}>
+        <div className={RadType.emo.text(fontSize)}>
+          RadType: <s>Radial</s> Radical Typing
+        </div>
+      </div>
+
+      <div className={emo.rowWidthed(rowWidthPx, rowMarginPx)}>
         {visualization}
       </div>
 
-      <div className={emo.rowHeighted(rowHeightPx, rowPaddingPx)}>
+      <div className={emo.rowHeighted(rowHeightPx, rowMarginPx)}>
         <div className={RadType.emo.text(fontSize)}>{text}</div>
       </div>
 
-      <div className={emo.row(rowPaddingPx)}>
+      <div className={emo.row(rowMarginPx)}>
         <button
           className={emo.button(fontSize)}
           onClick={toggleVisualizationId}
