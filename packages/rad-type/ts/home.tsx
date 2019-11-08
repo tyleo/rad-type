@@ -178,6 +178,11 @@ const emo = {
     position: relative;
   `,
 
+  flexJustified: () => Emotion.css`
+    display: flex;
+    justify-content: center;
+  `,
+
   row: (heightPx: number) => Emotion.css`
     display: flex;
     flex-direction: row;
@@ -195,8 +200,8 @@ const emo = {
     ${emo.text(fontSize)};
     color: ${color};
     display: flex;
-    position: absolute;
     line-height: 0px;
+    position: absolute;
     justify-content: center;
     width: 0px;
   `,
@@ -802,6 +807,41 @@ export const RadTypeVis2 = (props: {
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
+  const letters = React.useMemo(
+    () =>
+      defaultKeys.map((i, index) => {
+        const altLetterMod = Math.round(defaultKeys.length / altKeys.length);
+        const hasAltLetter = index % altLetterMod === 0;
+        const altLetterIndex = hasAltLetter
+          ? Math.round(index / altLetterMod)
+          : undefined;
+        const altLetter =
+          altLetterIndex === undefined ? undefined : altKeys[altLetterIndex];
+
+        const { defaultLetterColor, altLetterColor } = actualAltButton
+          ? {
+              defaultLetterColor: greyColor,
+              altLetterColor: blackColor,
+            }
+          : {
+              defaultLetterColor: blackColor,
+              altLetterColor: greyColor,
+            };
+
+        return hasAltLetter ? (
+          <div className={emo.flexJustified()}>
+            <div className={emo.letter(fontSize, defaultLetterColor)}>{i}</div>
+            <div className={emo.letter(fontSize, altLetterColor)}>
+              {altLetter}
+            </div>
+          </div>
+        ) : (
+          <div className={emo.letter(fontSize, defaultLetterColor)}>{i}</div>
+        );
+      }),
+    [actualAltButton, altKeys, defaultKeys, fontSize],
+  );
+
   return (
     <div className={emo.radTypeContainerRelativeContainer(actualBoxSizePx)}>
       <div className={emo.radTypeContainerAbsoluteContainer(-offsetPx)}>
@@ -813,66 +853,37 @@ export const RadTypeVis2 = (props: {
           shouldHighlight={isInTinyZone}
         />
         {actualAltButton ? (
-          <>
-            <RingSegments
-              boxSizePx={actualBoxSizePx}
-              offsetPx={offsetPx}
-              borderThicknessRation={actualBorderThicknessRation}
-              startRadiusRation={actualTargetRadiusRation}
-              endRadiusRation={actualOuterRadiusRation}
-              numSegments={altKeys.length}
-              segmentAngle={altSegmentAngle}
-              segmentOffset={altSegmentOffset}
-              highlightedSegment={altDotIndex}
-            />
-            <LetterRing
-              letters={defaultKeys}
-              angle={defaultSegmentAngle}
-              offset={0}
-              radiusPx={letterRadiusPx}
-              fontSize={fontSize}
-              color={greyColor}
-            />
-            <LetterRing
-              letters={altKeys}
-              angle={altSegmentAngle}
-              offset={0}
-              radiusPx={letterRadiusPx}
-              fontSize={fontSize}
-              color={blackColor}
-            />
-          </>
+          <RingSegments
+            boxSizePx={actualBoxSizePx}
+            offsetPx={offsetPx}
+            borderThicknessRation={actualBorderThicknessRation}
+            startRadiusRation={actualTargetRadiusRation}
+            endRadiusRation={actualOuterRadiusRation}
+            numSegments={altKeys.length}
+            segmentAngle={altSegmentAngle}
+            segmentOffset={altSegmentOffset}
+            highlightedSegment={altDotIndex}
+          />
         ) : (
-          <>
-            <RingSegments
-              boxSizePx={actualBoxSizePx}
-              offsetPx={offsetPx}
-              borderThicknessRation={actualBorderThicknessRation}
-              startRadiusRation={actualTargetRadiusRation}
-              endRadiusRation={actualOuterRadiusRation}
-              numSegments={defaultKeys.length}
-              segmentAngle={defaultSegmentAngle}
-              segmentOffset={defaultSegmentOffset}
-              highlightedSegment={defaultDotIndex}
-            />
-            <LetterRing
-              letters={altKeys}
-              angle={altSegmentAngle}
-              offset={0}
-              radiusPx={letterRadiusPx}
-              fontSize={fontSize}
-              color={greyColor}
-            />
-            <LetterRing
-              letters={defaultKeys}
-              angle={defaultSegmentAngle}
-              offset={0}
-              radiusPx={letterRadiusPx}
-              fontSize={fontSize}
-              color={blackColor}
-            />
-          </>
+          <RingSegments
+            boxSizePx={actualBoxSizePx}
+            offsetPx={offsetPx}
+            borderThicknessRation={actualBorderThicknessRation}
+            startRadiusRation={actualTargetRadiusRation}
+            endRadiusRation={actualOuterRadiusRation}
+            numSegments={defaultKeys.length}
+            segmentAngle={defaultSegmentAngle}
+            segmentOffset={defaultSegmentOffset}
+            highlightedSegment={defaultDotIndex}
+          />
         )}
+
+        <ElementRing
+          nodes={letters}
+          angle={defaultSegmentAngle}
+          offset={0}
+          radiusPx={letterRadiusPx}
+        />
 
         <div
           className={emo.letter(
