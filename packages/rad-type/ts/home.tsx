@@ -2,157 +2,7 @@ import * as React from "react";
 
 import * as Emotion from "emotion";
 
-interface ILineData {
-  readonly cos: number;
-  readonly sin: number;
-}
-
-const atan2 = (x: number, y: number) => {
-  const angle = Math.atan2(y, x);
-  return angle < 0 ? angle + 2 * Math.PI : angle;
-};
-
-const calcAngleIndex = (
-  x: number,
-  y: number,
-  angleIncrement: number,
-  angleOffset: number,
-) =>
-  Math.floor(negToPosDeg(radToDeg(atan2(x, y)) - angleOffset) / angleIncrement);
-
-const degToRad = (deg: number) => (deg * Math.PI) / 180;
-
-const negToPosDeg = (deg: number) => (deg < 0 ? deg + 360 : deg);
-
-const radToDeg = (rad: number) => (rad * 180) / Math.PI;
-
-const range = (first: number, count: number): number[] => {
-  const result = [];
-  for (let i = first; i < first + count; ++i) {
-    result.push(i);
-  }
-  return result;
-};
-
-const useGamepad = (
-  gamepadId: number | undefined,
-  gamepadCallback: (gamepad: Gamepad) => void,
-) => {
-  const animationFrameRef = React.useRef<number | undefined>();
-
-  React.useEffect(() => {
-    if (gamepadId === undefined) return;
-
-    const updateGamepad = () => {
-      const gamepad = navigator.getGamepads()[gamepadId];
-      if (gamepad === null) return;
-
-      gamepadCallback(gamepad);
-
-      animationFrameRef.current = requestAnimationFrame(updateGamepad);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(updateGamepad);
-
-    return () => {
-      if (animationFrameRef.current !== undefined) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [gamepadId, gamepadCallback]);
-};
-
-const useJoystick = (
-  gamepadId: number | undefined,
-  xAxisId: number,
-  yAxisId: number,
-) => {
-  const [x, setX] = React.useState<number | undefined>();
-  const [y, setY] = React.useState<number | undefined>();
-
-  const onGamepad = React.useCallback(
-    (gamepad: Gamepad) => {
-      const xAxis = gamepad.axes[xAxisId];
-      const yAxis = -gamepad.axes[yAxisId];
-
-      if (xAxis !== x) setX(xAxis);
-      if (yAxis !== y) setY(yAxis);
-    },
-    [xAxisId, yAxisId, x, y],
-  );
-
-  useGamepad(gamepadId, onGamepad);
-
-  return [x, y];
-};
-
-const useButton = (gamepadId: number | undefined, buttonId: number) => {
-  const [state, setState] = React.useState<boolean | undefined>();
-
-  const onGamepad = React.useCallback(
-    (gamepad: Gamepad) => {
-      const button = gamepad.buttons[buttonId];
-
-      if (button.pressed !== state) setState(button.pressed);
-    },
-    [buttonId, state],
-  );
-
-  useGamepad(gamepadId, onGamepad);
-
-  return state;
-};
-
-function useChangeEvent<T>(value: T, onChange: (prev: T, current: T) => void) {
-  const lastValue = React.useRef(value);
-  React.useEffect(() => {
-    if (lastValue.current !== value) {
-      onChange(lastValue.current, value);
-    }
-    lastValue.current = value;
-  }, [value, onChange]);
-}
-
-const useButtonEvents = (
-  gamepadId: number | undefined,
-  buttonId: number,
-  onPress?: () => void,
-  onRelease?: () => void,
-) => {
-  const button = useButton(gamepadId, buttonId);
-  const onButtonChanged = React.useCallback(
-    (prev: boolean | undefined, current: boolean | undefined) => {
-      prev = prev === undefined ? false : prev;
-      current = current === undefined ? false : current;
-      if (prev !== current) {
-        if (current) {
-          if (onPress) onPress();
-        } else {
-          if (onRelease) onRelease();
-        }
-      }
-    },
-    [onPress, onRelease],
-  );
-  useChangeEvent(button, onButtonChanged);
-};
-
-const useLogButtons = (gamepadId: number | undefined) => {
-  const onGamepad = React.useCallback((gamepad: Gamepad) => {
-    let str = gamepad.buttons.reduce((prev, current, index) => {
-      prev = `${prev}${index}: ${current.pressed}, `;
-      return prev;
-    }, "{ ");
-    if (gamepad.buttons.length > 0) {
-      str = str.slice(0, -2);
-      str = `${str} `;
-    }
-    str = `${str}}`;
-    console.log(str);
-  }, []);
-
-  useGamepad(gamepadId, onGamepad);
-};
+import * as RadType from "rad-type";
 
 const emo = {
   radTypeContainerRelativeContainer: (sizePx: number) => Emotion.css`
@@ -207,7 +57,7 @@ const emo = {
   `,
 
   circleItem: (angleDeg: number, radius: number) => {
-    const angleRad = degToRad(angleDeg);
+    const angleRad = RadType.degToRad(angleDeg);
     return Emotion.css`
       position: absolute;
       left: ${radius * Math.cos(angleRad)}px;
@@ -275,8 +125,8 @@ const RingSegment = React.memo(
     readonly borderThicknessRation: number;
     readonly startRadiusRation: number;
     readonly endRadiusRation: number;
-    readonly startLine: ILineData;
-    readonly endLine: ILineData;
+    readonly startLine: RadType.ILineData;
+    readonly endLine: RadType.ILineData;
     readonly shouldHighlight: boolean;
   }) => {
     const {
@@ -366,10 +216,10 @@ const RingSegments = React.memo(
       highlightedSegment,
     } = props;
 
-    const lineData: readonly ILineData[] = React.useMemo(
+    const lineData: readonly RadType.ILineData[] = React.useMemo(
       () =>
-        range(0, numSegments).map(i => {
-          const angle = degToRad(i * segmentAngle + segmentOffset);
+        RadType.range(0, numSegments).map(i => {
+          const angle = RadType.degToRad(i * segmentAngle + segmentOffset);
           return {
             cos: Math.cos(angle),
             sin: Math.sin(angle),
@@ -380,8 +230,8 @@ const RingSegments = React.memo(
 
     const RingSegmentMemo = React.useCallback(
       (props: {
-        readonly startLine: ILineData;
-        readonly endLine: ILineData;
+        readonly startLine: RadType.ILineData;
+        readonly endLine: RadType.ILineData;
         readonly shouldHightlight: boolean;
       }) => {
         return (
@@ -408,7 +258,7 @@ const RingSegments = React.memo(
 
     return (
       <>
-        {range(0, numSegments).map(i => (
+        {RadType.range(0, numSegments).map(i => (
           <RingSegmentMemo
             key={i}
             startLine={lineData[i]}
@@ -636,7 +486,7 @@ export const RadTypeVis = (props: {
   const letterRadiusPx =
     ((letterCircleRadiusRation + targetCircleRadiusRation) / 2) * halfBoxSizePx;
 
-  const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
+  const [x, y] = RadType.useJoystick(gamepadId, xAxisId, yAxisId);
 
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
@@ -644,7 +494,7 @@ export const RadTypeVis = (props: {
 
   const isInTriggerZone = magnitudeSq > targetRadiusRationSq;
   const dotIndex = isInTriggerZone
-    ? calcAngleIndex(xOrZero, yOrZero, segmentAngle, segmentOffset)
+    ? RadType.calcAngleIndex(xOrZero, yOrZero, segmentAngle, segmentOffset)
     : undefined;
 
   const isInTinyZone = magnitudeSq <= tinyRadiusRationSq;
@@ -665,7 +515,12 @@ export const RadTypeVis = (props: {
     () => (isInTinyZone ? appendLetter(centerKey) : {}),
     [appendLetter, centerKey, isInTinyZone],
   );
-  useButtonEvents(gamepadId, altButtonId, undefined, onAltButtonChanged);
+  RadType.useButtonEvents(
+    gamepadId,
+    altButtonId,
+    undefined,
+    onAltButtonChanged,
+  );
 
   return (
     <div className={emo.radTypeContainerRelativeContainer(actualBoxSizePx)}>
@@ -785,12 +640,12 @@ export const RadTypeVis2 = (props: {
     ((altLetterCircleRadiusRation + letterCircleRadiusRation) / 2) *
     halfBoxSizePx;
 
-  const [x, y] = useJoystick(gamepadId, xAxisId, yAxisId);
+  const [x, y] = RadType.useJoystick(gamepadId, xAxisId, yAxisId);
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
-  const altButton = useButton(gamepadId, altButtonId);
+  const altButton = RadType.useButton(gamepadId, altButtonId);
   const actualAltButton = altButton === undefined ? false : altButton;
 
   const blackColor = "rgb(0, 0, 0)";
@@ -798,7 +653,7 @@ export const RadTypeVis2 = (props: {
 
   const defaultDotIndex =
     !actualAltButton && magnitudeSq > targetRadiusRationSq
-      ? calcAngleIndex(
+      ? RadType.calcAngleIndex(
           xOrZero,
           yOrZero,
           defaultSegmentAngle,
@@ -807,7 +662,12 @@ export const RadTypeVis2 = (props: {
       : undefined;
   const altDotIndex =
     actualAltButton && magnitudeSq > targetRadiusRationSq
-      ? calcAngleIndex(xOrZero, yOrZero, altSegmentAngle, altSegmentOffset)
+      ? RadType.calcAngleIndex(
+          xOrZero,
+          yOrZero,
+          altSegmentAngle,
+          altSegmentOffset,
+        )
       : undefined;
 
   const isInTinyZone = magnitudeSq <= tinyRadiusRationSq;
@@ -863,7 +723,7 @@ export const RadTypeVis2 = (props: {
     () => (isInTinyZone && !enteredAltKey ? appendLetter(centerKey) : {}),
     [appendLetter, centerKey, isInTinyZone, enteredAltKey],
   );
-  useButtonEvents(
+  RadType.useButtonEvents(
     gamepadId,
     altButtonId,
     onAltButtonPressed,
@@ -1001,8 +861,8 @@ export const Home = () => {
     appendLetter0,
   ]);
 
-  useButtonEvents(gamepadId, 2, undefined, backspace0);
-  useButtonEvents(gamepadId, 3, undefined, appendSpace0);
+  RadType.useButtonEvents(gamepadId, 2, undefined, backspace0);
+  RadType.useButtonEvents(gamepadId, 3, undefined, appendSpace0);
 
   const [text1, setText1] = React.useState("");
   const appendLetter1 = React.useCallback(
@@ -1016,8 +876,8 @@ export const Home = () => {
     appendLetter1,
   ]);
 
-  useButtonEvents(gamepadId, 2, undefined, backspace1);
-  useButtonEvents(gamepadId, 3, undefined, appendSpace1);
+  RadType.useButtonEvents(gamepadId, 2, undefined, backspace1);
+  RadType.useButtonEvents(gamepadId, 3, undefined, appendSpace1);
 
   return (
     <div className={emo.vertical()}>
