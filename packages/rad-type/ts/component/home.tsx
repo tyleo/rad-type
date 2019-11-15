@@ -16,7 +16,7 @@ const emo = {
   row: (marginPx: number) => Emotion.css`
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
     margin-top: ${marginPx}px;
     margin-bottom: ${marginPx}px;
@@ -89,12 +89,28 @@ export const Home = () => {
     (letter: string) => setText(t => `${t}${letter}`),
     [setText],
   );
-  const backspace = React.useCallback(() => setText(t => t.slice(0, -1)), [
-    setText,
-  ]);
-  const appendSpace = React.useCallback(() => appendLetter(" "), [
-    appendLetter,
-  ]);
+
+  const vibrationActuator = RadType.useVibrationActuator(gamepadId);
+  const rumble = React.useCallback(
+    () =>
+      vibrationActuator === undefined
+        ? {}
+        : vibrationActuator.playEffect("dual-rumble", {
+            duration: 50,
+            strongMagnitude: 1,
+            weakMagnitude: 1,
+          }),
+    [vibrationActuator],
+  );
+
+  const backspace = React.useCallback(() => {
+    setText(t => t.slice(0, -1));
+    rumble();
+  }, [setText, rumble]);
+  const appendSpace = React.useCallback(() => {
+    appendLetter(" ");
+    rumble();
+  }, [appendLetter, rumble]);
 
   RadType.useButtonEvents(gamepadId, 2, undefined, backspace);
   RadType.useButtonEvents(gamepadId, 3, undefined, appendSpace);

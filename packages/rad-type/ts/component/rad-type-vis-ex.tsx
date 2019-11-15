@@ -169,8 +169,8 @@ export const RadTypeVisEx = (props: {
     [],
   );
   const onAltButtonReleased = React.useCallback(
-    () => (isInTinyZone && !enteredAltKey ? appendLetter(centerKey) : {}),
-    [appendLetter, centerKey, isInTinyZone, enteredAltKey],
+    () => (isInTinyZone && !enteredAltKey ? appendAndRumble(centerKey) : {}),
+    [appendAndRumble, centerKey, isInTinyZone, enteredAltKey],
   );
   RadType.useButtonEvents(
     gamepadId,
