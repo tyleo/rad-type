@@ -109,6 +109,21 @@ export const RadTypeVisEx = (props: {
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
+  const vibrationActuator = RadType.useVibrationActuator(gamepadId);
+  const appendAndRumble = React.useCallback(
+    (letter: string) => {
+      if (vibrationActuator !== undefined) {
+        vibrationActuator.playEffect("dual-rumble", {
+          duration: 50,
+          strongMagnitude: 1,
+          weakMagnitude: 1,
+        });
+      }
+      appendLetter(letter);
+    },
+    [vibrationActuator, appendLetter],
+  );
+
   const { defaultLetterColor, altLetterColor } = actualAltButton
     ? {
         defaultLetterColor: greyColor,
@@ -128,10 +143,10 @@ export const RadTypeVisEx = (props: {
     ) {
       const key =
         defaultKeys[(lastDefaultDotIndex.current + 1) % defaultKeys.length];
-      appendLetter(key);
+      appendAndRumble(key);
     }
     lastDefaultDotIndex.current = defaultDotIndex;
-  }, [defaultDotIndex, defaultKeys, appendLetter, altButton]);
+  }, [defaultDotIndex, defaultKeys, appendAndRumble, altButton]);
 
   const [enteredAltKey, setEnteredAltKey] = React.useState(false);
 
@@ -143,11 +158,11 @@ export const RadTypeVisEx = (props: {
       altButton
     ) {
       const key = altKeys[(lastAltDotIndex.current + 1) % altKeys.length];
-      appendLetter(key);
+      appendAndRumble(key);
       setEnteredAltKey(true);
     }
     lastAltDotIndex.current = altDotIndex;
-  }, [altDotIndex, altKeys, appendLetter, altButton]);
+  }, [altDotIndex, altKeys, appendAndRumble, altButton]);
 
   const onAltButtonPressed = React.useCallback(
     () => setEnteredAltKey(false),

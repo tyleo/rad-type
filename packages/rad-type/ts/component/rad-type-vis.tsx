@@ -82,18 +82,33 @@ export const RadTypeVis = (props: {
   const actualX = (xOrZero * boxSizePx) / actualBoxSizePx;
   const actualY = (yOrZero * boxSizePx) / actualBoxSizePx;
 
+  const vibrationActuator = RadType.useVibrationActuator(gamepadId);
+  const appendAndRumble = React.useCallback(
+    (letter: string) => {
+      if (vibrationActuator !== undefined) {
+        vibrationActuator.playEffect("dual-rumble", {
+          duration: 50,
+          strongMagnitude: 1,
+          weakMagnitude: 1,
+        });
+      }
+      appendLetter(letter);
+    },
+    [vibrationActuator, appendLetter],
+  );
+
   const lastDotIndex = React.useRef(dotIndex);
   React.useEffect(() => {
     if (dotIndex === undefined && lastDotIndex.current !== dotIndex) {
       const key = keys[(lastDotIndex.current + 1) % keys.length];
-      appendLetter(key);
+      appendAndRumble(key);
     }
     lastDotIndex.current = dotIndex;
-  }, [dotIndex, keys, appendLetter]);
+  }, [dotIndex, keys, appendLetter, appendAndRumble]);
 
   const onAltButtonChanged = React.useCallback(
-    () => (isInTinyZone ? appendLetter(centerKey) : {}),
-    [appendLetter, centerKey, isInTinyZone],
+    () => (isInTinyZone ? appendAndRumble(centerKey) : {}),
+    [appendAndRumble, centerKey, isInTinyZone],
   );
   RadType.useButtonEvents(
     gamepadId,

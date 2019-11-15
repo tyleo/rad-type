@@ -23,5 +23,8 @@ export * from "./hook/use-button-events";
 export * from "./hook/use-button";
 export * from "./hook/use-change-event";
 export * from "./hook/use-gamepad";
+export * from "./hook/use-vibration-actuator";
 export * from "./hook/use-joystick";
 export * from "./hook/use-log-buttons";
+
+export * from "./type/i-vibration-actuator";

@@ -77,7 +77,6 @@ export const Home = () => {
 
   React.useEffect(() => {
     const eventListener = (e: Event) => {
-      const eTyped = e as GamepadEvent;
       setGamepadId(undefined);
     };
     window.addEventListener("gamepaddisconnected", eventListener);
