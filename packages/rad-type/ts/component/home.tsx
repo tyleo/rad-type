@@ -42,12 +42,12 @@ const emo = {
 
 export const Home = () => {
   const lineThicknessPx = 5;
-  const fontSize = 42;
+  const fontSize = 64;
 
   const bigCircleDiameterPx = 500;
-  const targetCircleDiameterPx = 460;
-  const letterCircleDiameterPx = 350;
-  const altLetterCircleDiameterPx = 240;
+  const targetCircleDiameterPx = 470;
+  const letterCircleDiameterPx = 250;
+  const altLetterCircleDiameterPx = 160;
   const tinyCircleDiameterPx = 100;
 
   const targetCircleRadiusRation = targetCircleDiameterPx / bigCircleDiameterPx;

@@ -12,11 +12,16 @@ export const useJoystick = (
 
   const onGamepad = React.useCallback(
     (gamepad: Gamepad) => {
-      const xAxis = gamepad.axes[xAxisId];
-      const yAxis = -gamepad.axes[yAxisId];
+      let xAxis = gamepad.axes[xAxisId];
+      let yAxis = -gamepad.axes[yAxisId];
 
-      if (xAxis !== x) setX(xAxis);
-      if (yAxis !== y) setY(yAxis);
+      let magnitude = Math.sqrt(xAxis * xAxis + yAxis * yAxis);
+      if (magnitude <= 1) {
+        magnitude = 1;
+      }
+
+      if (xAxis !== x) setX(xAxis / magnitude);
+      if (yAxis !== y) setY(yAxis / magnitude);
     },
     [xAxisId, yAxisId, x, y],
   );
