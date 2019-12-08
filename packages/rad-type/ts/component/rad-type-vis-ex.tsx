@@ -78,6 +78,17 @@ export const RadTypeVisEx = (props: {
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
+  const bufferSize = 2;
+  const isOutsideOfCenter = magnitudeSq > targetRadiusRationSq;
+  const bufferedIsOutsideOfCenter = RadType.useBuffer(
+    isOutsideOfCenter,
+    isOutsideOfCenter,
+    bufferSize,
+  );
+  const hasRecentlyBeenOutsideOfCenter = bufferedIsOutsideOfCenter.reduce(
+    (prev, current) => prev || current,
+    false,
+  );
 
   const altButton = RadType.useButton(gamepadId, altButtonId);
   const actualAltButton = altButton === undefined ? false : altButton;
@@ -85,24 +96,37 @@ export const RadTypeVisEx = (props: {
   const blackColor = "rgb(0, 0, 0)";
   const greyColor = "rgb(179, 179, 179)";
 
-  const defaultDotIndex =
-    !actualAltButton && magnitudeSq > targetRadiusRationSq
-      ? RadType.calcAngleIndex(
-          xOrZero,
-          yOrZero,
-          defaultSegmentAngle,
-          defaultSegmentOffset,
-        )
-      : undefined;
-  const altDotIndex =
-    actualAltButton && magnitudeSq > targetRadiusRationSq
-      ? RadType.calcAngleIndex(
-          xOrZero,
-          yOrZero,
-          altSegmentAngle,
-          altSegmentOffset,
-        )
-      : undefined;
+  const dotIndexKey = isOutsideOfCenter
+    ? actualAltButton
+      ? (() => {
+          const dotIndex = RadType.calcAngleIndex(
+            xOrZero,
+            yOrZero,
+            altSegmentAngle,
+            altSegmentOffset,
+          );
+          return { dotIndex, key: altKeys[(dotIndex + 1) % altKeys.length] };
+        })()
+      : (() => {
+          const dotIndex = RadType.calcAngleIndex(
+            xOrZero,
+            yOrZero,
+            defaultSegmentAngle,
+            defaultSegmentOffset,
+          );
+          return {
+            dotIndex,
+            key: defaultKeys[(dotIndex + 1) % defaultKeys.length],
+          };
+        })()
+    : { dotIndex: undefined, key: undefined };
+
+  const bufferedKeys = RadType.useBuffer(
+    dotIndexKey.key,
+    dotIndexKey.key,
+    bufferSize + 1,
+  );
+  const key = bufferedKeys[0];
 
   const isInTinyZone = magnitudeSq <= tinyRadiusRationSq;
 
@@ -134,35 +158,13 @@ export const RadTypeVisEx = (props: {
         altLetterColor: greyColor,
       };
 
-  const lastDefaultDotIndex = React.useRef(defaultDotIndex);
   React.useEffect(() => {
-    if (
-      defaultDotIndex === undefined &&
-      lastDefaultDotIndex.current !== defaultDotIndex &&
-      !altButton
-    ) {
-      const key =
-        defaultKeys[(lastDefaultDotIndex.current + 1) % defaultKeys.length];
+    if (!hasRecentlyBeenOutsideOfCenter && key !== undefined) {
       appendAndRumble(key);
     }
-    lastDefaultDotIndex.current = defaultDotIndex;
-  }, [defaultDotIndex, defaultKeys, appendAndRumble, altButton]);
+  }, [key, appendAndRumble, hasRecentlyBeenOutsideOfCenter]);
 
   const [enteredAltKey, setEnteredAltKey] = React.useState(false);
-
-  const lastAltDotIndex = React.useRef(altDotIndex);
-  React.useEffect(() => {
-    if (
-      altDotIndex === undefined &&
-      lastAltDotIndex.current !== altDotIndex &&
-      altButton
-    ) {
-      const key = altKeys[(lastAltDotIndex.current + 1) % altKeys.length];
-      appendAndRumble(key);
-      setEnteredAltKey(true);
-    }
-    lastAltDotIndex.current = altDotIndex;
-  }, [altDotIndex, altKeys, appendAndRumble, altButton]);
 
   const onAltButtonPressed = React.useCallback(
     () => setEnteredAltKey(false),
@@ -201,7 +203,7 @@ export const RadTypeVisEx = (props: {
             numSegments={altKeys.length}
             segmentAngle={altSegmentAngle}
             segmentOffset={altSegmentOffset}
-            highlightedSegment={altDotIndex}
+            highlightedSegment={dotIndexKey.dotIndex}
           />
         ) : (
           <RadType.RingSegments
@@ -213,7 +215,7 @@ export const RadTypeVisEx = (props: {
             numSegments={defaultKeys.length}
             segmentAngle={defaultSegmentAngle}
             segmentOffset={defaultSegmentOffset}
-            highlightedSegment={defaultDotIndex}
+            highlightedSegment={dotIndexKey.dotIndex}
           />
         )}
 

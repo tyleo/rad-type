@@ -23,8 +23,10 @@ export const emo = {
     position: absolute;
   `,
 
+  // font-family: "Arial Rounded MT Bold";
   text: (fontSize: number) => Emotion.css`
-    font-family: "Arial Rounded MT Bold";
+    font-family: "Arial";
     font-size: ${fontSize}px;
+    font-weight: bold;
   `,
 } as const;

@@ -19,6 +19,7 @@ export * from "./func/neg-to-pos-deg";
 export * from "./func/rad-to-deg";
 export * from "./func/range";
 
+export * from "./hook/use-buffer";
 export * from "./hook/use-button-events";
 export * from "./hook/use-button";
 export * from "./hook/use-change-event";
