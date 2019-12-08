@@ -72,10 +72,39 @@ export const RadTypeVis = (props: {
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
 
-  const isInTriggerZone = magnitudeSq > targetRadiusRationSq;
-  const dotIndex = isInTriggerZone
-    ? RadType.calcAngleIndex(xOrZero, yOrZero, segmentAngle, segmentOffset)
-    : undefined;
+  const bufferSize = 2;
+  const isOutsideOfCenter = magnitudeSq > targetRadiusRationSq;
+  const bufferedIsOutsideOfCenter = RadType.useBuffer(
+    isOutsideOfCenter,
+    isOutsideOfCenter,
+    bufferSize,
+  );
+  const hasRecentlyBeenOutsideOfCenter = bufferedIsOutsideOfCenter.reduce(
+    (prev, current) => prev || current,
+    false,
+  );
+
+  const dotIndexKey = isOutsideOfCenter
+    ? (() => {
+        const dotIndex = RadType.calcAngleIndex(
+          xOrZero,
+          yOrZero,
+          segmentAngle,
+          segmentOffset,
+        );
+        return {
+          dotIndex,
+          key: keys[(dotIndex + 1) % keys.length],
+        };
+      })()
+    : { dotIndex: undefined, key: undefined };
+
+  const bufferedKeys = RadType.useBuffer(
+    dotIndexKey.key,
+    dotIndexKey.key,
+    bufferSize + 1,
+  );
+  const key = bufferedKeys[0];
 
   const isInTinyZone = magnitudeSq <= tinyRadiusRationSq;
 
@@ -97,14 +126,11 @@ export const RadTypeVis = (props: {
     [vibrationActuator, appendLetter],
   );
 
-  const lastDotIndex = React.useRef(dotIndex);
   React.useEffect(() => {
-    if (dotIndex === undefined && lastDotIndex.current !== dotIndex) {
-      const key = keys[(lastDotIndex.current + 1) % keys.length];
+    if (!hasRecentlyBeenOutsideOfCenter && key !== undefined) {
       appendAndRumble(key);
     }
-    lastDotIndex.current = dotIndex;
-  }, [dotIndex, keys, appendLetter, appendAndRumble]);
+  }, [key, appendAndRumble, hasRecentlyBeenOutsideOfCenter]);
 
   const onAltButtonChanged = React.useCallback(
     () => (isInTinyZone ? appendAndRumble(centerKey) : {}),
@@ -127,7 +153,7 @@ export const RadTypeVis = (props: {
           offsetPx={offsetPx}
           borderThicknessRation={actualBorderThicknessRation}
           radiusRation={actualTinyRadiusRation}
-          shouldHighlight={dotIndex === undefined && isInTinyZone}
+          shouldHighlight={isInTinyZone}
         />
 
         <RadType.RingSegments
@@ -139,7 +165,7 @@ export const RadTypeVis = (props: {
           numSegments={keys.length}
           segmentAngle={segmentAngle}
           segmentOffset={segmentOffset}
-          highlightedSegment={dotIndex}
+          highlightedSegment={dotIndexKey.dotIndex}
         />
 
         <RadType.LetterRing

@@ -78,6 +78,7 @@ export const RadTypeVisEx = (props: {
   const xOrZero = x === undefined ? 0 : x;
   const yOrZero = y === undefined ? 0 : y;
   const magnitudeSq = xOrZero * xOrZero + yOrZero * yOrZero;
+
   const bufferSize = 2;
   const isOutsideOfCenter = magnitudeSq > targetRadiusRationSq;
   const bufferedIsOutsideOfCenter = RadType.useBuffer(
@@ -158,21 +159,18 @@ export const RadTypeVisEx = (props: {
         altLetterColor: greyColor,
       };
 
+  const [enteredKey, setEnteredKey] = React.useState(false);
   React.useEffect(() => {
     if (!hasRecentlyBeenOutsideOfCenter && key !== undefined) {
       appendAndRumble(key);
+      setEnteredKey(true);
     }
   }, [key, appendAndRumble, hasRecentlyBeenOutsideOfCenter]);
 
-  const [enteredAltKey, setEnteredAltKey] = React.useState(false);
-
-  const onAltButtonPressed = React.useCallback(
-    () => setEnteredAltKey(false),
-    [],
-  );
+  const onAltButtonPressed = React.useCallback(() => setEnteredKey(false), []);
   const onAltButtonReleased = React.useCallback(
-    () => (isInTinyZone && !enteredAltKey ? appendAndRumble(centerKey) : {}),
-    [appendAndRumble, centerKey, isInTinyZone, enteredAltKey],
+    () => (isInTinyZone && !enteredKey ? appendAndRumble(centerKey) : {}),
+    [appendAndRumble, centerKey, isInTinyZone, enteredKey],
   );
   RadType.useButtonEvents(
     gamepadId,
