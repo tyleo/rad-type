@@ -43,20 +43,18 @@ export const RingSegments = React.memo(
         readonly startLine: RadType.ILineData;
         readonly endLine: RadType.ILineData;
         readonly shouldHightlight: boolean;
-      }) => {
-        return (
-          <RadType.RingSegment
-            boxSizePx={boxSizePx}
-            offsetPx={offsetPx}
-            borderThicknessRation={borderThicknessRation}
-            startRadiusRation={startRadiusRation}
-            endRadiusRation={endRadiusRation}
-            startLine={props.startLine}
-            endLine={props.endLine}
-            shouldHighlight={props.shouldHightlight}
-          />
-        );
-      },
+      }) => (
+        <RadType.RingSegment
+          boxSizePx={boxSizePx}
+          offsetPx={offsetPx}
+          borderThicknessRation={borderThicknessRation}
+          startRadiusRation={startRadiusRation}
+          endRadiusRation={endRadiusRation}
+          startLine={props.startLine}
+          endLine={props.endLine}
+          shouldHighlight={props.shouldHightlight}
+        />
+      ),
       [
         boxSizePx,
         offsetPx,
